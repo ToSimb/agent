@@ -1,6 +1,5 @@
 import psutil
 
-# Поменять на try
 
 def get_virtual_memory_total():
     """Возвращает общее количество оперативной памяти в системе"""
