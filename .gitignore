@@ -167,3 +167,4 @@ cython_debug/
 *.log.4
 *.log.5
 DIR/
+*.db
