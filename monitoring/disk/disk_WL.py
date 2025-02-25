@@ -2,6 +2,10 @@ import platform
 import subprocess
 
 
+# Нужны sata диски
+
+
+
 def run_smartctl_command(command):
     """Запускает smartctl и возвращает вывод или None при ошибке"""
     try:
