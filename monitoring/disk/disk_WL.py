@@ -1,9 +1,4 @@
-import platform
 import subprocess
-
-
-# Нужны sata диски
-
 
 
 def run_smartctl_command(command):
@@ -16,30 +11,17 @@ def run_smartctl_command(command):
 
 
 def get_disk_list():
-    """Получение списка дисков для Windows и Linux"""
-    if platform.system() == "Linux":
-        try:
-            result = subprocess.check_output(["lsblk", "-d", "-n", "-o", "NAME"]).decode().strip().split("\n")
-            return [f"/dev/{disk.strip()}" for disk in result if disk.strip()]
-        except Exception as e:
-            print(f"Ошибка получения списка дисков: {e}")
-            return []
-    elif platform.system() == "Windows":
-        try:
-            result = subprocess.check_output(["smartctl", "--scan"]).decode().strip().split("\n")
-            print(result)
-            disks = [[line.split()[0], ' '.join([line.split()[1], line.split()[2]])] for line in result if line.strip()]
-            print(disks)
-            return disks
-        except Exception as e:
-            print(f"Ошибка получения списка дисков: {e}")
-            return []
-    else:
-        print(f"Ошибка получения списка дисков")
+    """Получение списка дисков"""
+    try:
+        result = subprocess.check_output(["smartctl", "--scan"]).decode().strip().split("\n")
+        disks = [[line.split()[0], ' '.join([line.split()[1], line.split()[2]])] for line in result if line.strip()]
+        print(disks)
+        return disks
+    except Exception as e:
+        print(f"Ошибка получения списка дисков: {e}")
         return []
 
-
-def get_disks_data():
+def get_disk_data():
     disks = get_disk_list()
     if not disks:
         print("Диски не найдены.")
@@ -47,18 +29,24 @@ def get_disks_data():
 
     data = {}
 
-    for disk_name in disks:
+    for disk in disks:
         current_disk_data = {}
-        result = run_smartctl_command(f'smartctl -A {disk_name[1]} {disk_name[0]}')
-        for line in result.split('\n'):
-            if 'Temperature' in line and "Celsius" in line:
-                current_disk_data['Температура'] = int(line.split()[-2])
-            elif 'Power On Hours' in line:
-                current_disk_data['Общее время работы'] = int(''.join(line.split()[3:]))
+        result = run_smartctl_command(f'smartctl -A {disk[1]} {disk[0]}')
+        for line in result.splitlines():
+            if "Temperature_Celsius" in line:
+                current_disk_data["temperature"] = int(line.split()[-1])
+            elif "Power_On_Hours" in line:
+                current_disk_data["power_on_hours"] = int(line.split()[-1])
+            elif "Raw_Read_Error_Rate" in line or "Read_Error_Rate" in line:
+                current_disk_data["read_error_rate"] = int(line.split()[-1])
+            elif "Seek_Error_Rate" in line:
+                current_disk_data["seek_error_rate"] = int(line.split()[-1])
+            elif "Reallocated_Sector_Ct" in line:
+                current_disk_data["reallocated_sectors"] = int(line.split()[-1])
 
-        data[disk_name[0]] = current_disk_data
+        data[disk[0]] = current_disk_data
         print(result)
         print(data)
 
 
-get_disks_data()
+get_disk_data()
