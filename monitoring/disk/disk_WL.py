@@ -1,10 +1,12 @@
+import locale
 import subprocess
 
 
 def run_smartctl_command(command):
     """Запускает smartctl и возвращает вывод или None при ошибке"""
     try:
-        return subprocess.check_output(command, stderr=subprocess.DEVNULL).decode('cp1251')
+        encoding = locale.getpreferredencoding()
+        return subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding)
     except subprocess.CalledProcessError as e:
         print(f"SMART недоступен для команды: {' '.join(command)}:\n{e}")
         return None
@@ -13,8 +15,8 @@ def run_smartctl_command(command):
 def get_disk_list():
     """Получение списка дисков"""
     try:
-        result = subprocess.check_output(["smartctl", "--scan"]).decode().strip().split("\n")
-        disks = [[line.split()[0], ' '.join([line.split()[1], line.split()[2]])] for line in result if line.strip()]
+        result = run_smartctl_command(['smartctl', '--scan']).strip().split("\n")
+        disks = [[line.split()[0], line.split()[1], line.split()[2]] for line in result if line.strip()]
         print(disks)
         return disks
     except Exception as e:
@@ -31,7 +33,7 @@ def get_disk_data():
 
     for disk in disks:
         current_disk_data = {}
-        result = run_smartctl_command(f'smartctl -A {disk[1]} {disk[0]}')
+        result = run_smartctl_command(['smartctl', '-A', disk[1], disk[2], disk[0]])
         for line in result.splitlines():
             if "Temperature_Celsius" in line:
                 current_disk_data["temperature"] = int(line.split()[-1])
@@ -45,8 +47,6 @@ def get_disk_data():
                 current_disk_data["reallocated_sectors"] = int(line.split()[-1])
 
         data[disk[0]] = current_disk_data
-        print(result)
-        print(data)
-
+    print(data)
 
 get_disk_data()

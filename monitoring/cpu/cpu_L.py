@@ -1,55 +1,61 @@
-import psutil
-from cpu_WL import (get_cpu_time_idle, get_cpu_time_user, get_cpu_time_system, get_cpu_usage_per_core,
-                    get_cpu_logical_core_count, get_cpu_physical_core_count, get_interrupt_count)
+from cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
+import subprocess
+import re
 
-def get_cpu_time_io_wait():
-    """Возвращает процент времени, которое центральный процессор простаивает в ожидании результатов операций ввода/вывода"""
+def parse_proc_stat():
+    """Собирает статистику CPU из /proc/stat"""
+    cpu_data = {}
     try:
-        return psutil.cpu_times_percent(interval=1).iowait
+        with open("/proc/stat", "r") as f:
+            lines = f.readlines()
+        cpu_loads = []
+        for line in lines[1:]:
+            if line.startswith("intr"):
+                cpu_data["interrupts"] = int(line.split()[1])
+            if line.startswith("cpu"):
+                cpu_fields = line.split()
+                cpu_loads.append(100 - (int(cpu_fields[4]) / sum(map(int, cpu_fields[1:])) * 100))
+        cpu_data["cpu_loads"] = cpu_loads
+        return cpu_data
     except Exception as e:
-        print(f"Ошибка сбора параметра \"Процент времени простоя CPU в ожидании результатов операций ввода/вывода\": \n{e}")
-        return -1
+        print(f"Ошибка при обработке /proc/stat: {e}")
+        return None
 
 
-def get_cpu_time_irq():
-    """Возвращает процент времени, которое центральный процессор тратит на обработку аппаратных прерываний"""
+def get_cpu_usage():
+    """ Получает процент загрузки CPU с помощью команды top. """
     try:
-        with open("/proc/stat") as file:
-            line = file.readline()
-            fields = list(map(int, line.strip().split()[1:]))
-            if len(fields) < 6:
-                raise ValueError("Недостаточно данных в /proc/stat")            
-            total_time = sum(fields)
-            irq_time = fields[5]
-            return (irq_time / total_time) * 100 if total_time > 0 else 0.0
+        result = subprocess.run(['top', '-bn1'], stdout=subprocess.PIPE, text=True)
+        output = result.stdout
+        cpu_line_pattern = re.compile(r'^%Cpu\(s\):\s*(?P<user>\d+\.\d+)\s*u,\s*'                                     
+                                      r'(?P<system>\d+\.\d+)\s*s,\s*'
+                                      r'(?P<idle>\d+\.\d+)\s*i,\s*'
+                                      r'(?P<io>\d+\.\d+)\s*wa,\s*'
+                                      r'(?P<hi>\d+\.\d+)\s*hi,\s*'
+                                      r'(?P<si>\d+\.\d+)\s*si,\s*', re.MULTILINE)
+
+        match = cpu_line_pattern.search(output)
+        if match:
+            cpu_usage = {
+                "user": float(match.group("user")),  # Процент времени, потраченного на выполнение пользовательских процессов
+                "system": float(match.group("system")),  # Процент времени, потраченного на выполнение системных процессов
+                "idle": float(match.group("idle")),  # Процент времени простоя
+                "io": float(match.group("io")),  # Процент времени, потраченного на ожидание ввода-вывода (I/O)
+                "hi": float(match.group("hi")),  # Процент времени обработки аппаратных прерываний
+                "si": float(match.group("si")),  # Процент времени обработки программных прерываний
+            }
+            return cpu_usage
+        else:
+            print("Не удалось найти данные о загрузке CPU.")
+            return {}
+
     except Exception as e:
-        print(f"Ошибка сбора параметра \"Процент времени CPU на обработку аппаратных прерываний\": \n{e}")
-        return -1
+        print(f"Произошла ошибка: {e}")
+        return {}
 
 
-def get_cpu_time_soft_irq():
-    """Возвращает процент времени, которое центральный процессор тратит на обработку программных прерываний"""
-    try:
-        with open("/proc/stat") as file:
-            line = file.readline()
-            fields = list(map(int, line.strip().split()[1:]))
-            if len(fields) < 7:
-                raise ValueError("Недостаточно данных в /proc/stat")
-            total_time = sum(fields)
-            softirq_time = fields[6]
-            return (softirq_time / total_time) * 100 if total_time > 0 else 0.0
-    except Exception as e:
-        print(f"Ошибка сбора параметра \"Процент времени CPU на обработку программных прерываний\": \n{e}")
-        return -1
+stat = {**parse_proc_stat(), **get_cpu_usage}
+stat['cpu_logical_core_count'] = get_cpu_logical_core_count()
+stat['cpu_physical_core_count'] = get_cpu_physical_core_count()
 
-
-print(f"1. Физические ядра: {get_cpu_physical_core_count()}")
-print(f"2. Логические ядра: {get_cpu_logical_core_count()}")
-print(f"3. Загрузка логических процессоров: {get_cpu_usage_per_core()}")
-print(f"4. Количество прерываний: {get_interrupt_count()}")
-print(f"5. Процент времени процессора на пользовательские операции: {get_cpu_time_user()}")
-print(f"6. Процент времени процессора на системные операции: {get_cpu_time_system()}")
-print(f"7. Процент времени процессора на аппаратные прерывания: {get_cpu_time_irq()}")
-print(f"8. Процент времени процессора на программные прерывания: {get_cpu_time_soft_irq()}")
-print(f"9. Процент времени простоя процессора: {get_cpu_time_idle()}")
-print(f"10. Процент времени процессора на ожидание результатов операций ввода-вывода: {get_cpu_time_io_wait()}")
+print(stat)
