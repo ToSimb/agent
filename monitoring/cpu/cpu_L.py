@@ -23,26 +23,44 @@ def parse_proc_stat():
 
 
 def get_cpu_usage():
-    """ Получает процент загрузки CPU с помощью команды top. """
+    """
+    Получает процент загрузки CPU с помощью команды top.
+    """
     try:
+        # Запускаем команду top в режиме.batch (без интерактивного режима) и получаем один снимок данных
         result = subprocess.run(['top', '-bn1'], stdout=subprocess.PIPE, text=True)
         output = result.stdout
-        cpu_line_pattern = re.compile(r'^%Cpu\(s\):\s*(?P<user>\d+\.\d+)\s*u,\s*'                                     
-                                      r'(?P<system>\d+\.\d+)\s*s,\s*'
-                                      r'(?P<idle>\d+\.\d+)\s*i,\s*'
-                                      r'(?P<io>\d+\.\d+)\s*wa,\s*'
-                                      r'(?P<hi>\d+\.\d+)\s*hi,\s*'
-                                      r'(?P<si>\d+\.\d+)\s*si,\s*', re.MULTILINE)
+
+        # Обновленное регулярное выражение для поиска строки с загрузкой CPU
+        cpu_line_pattern = re.compile(
+            r'^%Cpu\(s\):\s*'  # Начало строки "%Cpu(s):"
+            r'(?P<user>\d+\.\d+)'  # Процент времени пользовательских процессов
+            r'\s*us,\s*'  # Слово "us" и пробелы
+            r'(?P<system>\d+\.\d+)'  # Процент времени системных процессов
+            r'\s*sy,\s*'  # Слово "sy" и пробелы
+            r'(?P<nice>\d+\.\d+)'  # Процент времени процессов с измененным приоритетом
+            r'\s*ni,\s*'  # Слово "ni" и пробелы
+            r'(?P<idle>\d+\.\d+)'  # Процент времени простоя
+            r'\s*id,\s*'  # Слово "id" и пробелы
+            r'(?P<io>\d+\.\d+)'  # Процент времени ожидания I/O
+            r'\s*wa,\s*'  # Слово "wa" и пробелы
+            r'(?P<hi>\d+\.\d+)'  # Процент времени аппаратных прерываний
+            r'\s*hi,\s*'  # Слово "hi" и пробелы
+            r'(?P<si>\d+\.\d+)'  # Процент времени программных прерываний
+            r'\s*si,\s*'  # Слово "si" и пробелы
+            r'(?P<st>\d+\.\d+)?'  # Необязательное поле "st" (steal time)
+            , re.MULTILINE)
 
         match = cpu_line_pattern.search(output)
         if match:
+            # Создаем словарь с процентами загрузки CPU
             cpu_usage = {
-                "user": float(match.group("user")),  # Процент времени, потраченного на выполнение пользовательских процессов
-                "system": float(match.group("system")),  # Процент времени, потраченного на выполнение системных процессов
-                "idle": float(match.group("idle")),  # Процент времени простоя
-                "io": float(match.group("io")),  # Процент времени, потраченного на ожидание ввода-вывода (I/O)
-                "hi": float(match.group("hi")),  # Процент времени обработки аппаратных прерываний
-                "si": float(match.group("si")),  # Процент времени обработки программных прерываний
+                "user": float(match.group("user")),
+                "system": float(match.group("system")),
+                "idle": float(match.group("idle")),
+                "io": float(match.group("io")),
+                "hi": float(match.group("hi")),
+                "si": float(match.group("si")),
             }
             return cpu_usage
         else:
@@ -54,7 +72,7 @@ def get_cpu_usage():
         return {}
 
 
-stat = {**parse_proc_stat(), **get_cpu_usage}
+stat = {**parse_proc_stat(), **get_cpu_usage()}
 stat['cpu_logical_core_count'] = get_cpu_logical_core_count()
 stat['cpu_physical_core_count'] = get_cpu_physical_core_count()
 
