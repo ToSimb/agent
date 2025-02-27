@@ -75,13 +75,17 @@ def get_cpu_time_io_wait():
         return -1
 
 
-print(f"1. Физические ядра: {get_cpu_physical_core_count()}")
-print(f"2. Логические ядра: {get_cpu_logical_core_count()}")
-print(f"3. Загрузка логических процессоров: {get_cpu_usage_per_core()}")
-print(f"4. Количество прерываний: {get_interrupt_count()}")
-print(f"5. Процент времени процессора на пользовательские операции: {get_cpu_time_user()}")
-print(f"6. Процент времени процессора на системные операции: {get_cpu_time_system()}")
-print(f"7. Процент времени процессора на аппаратные прерывания: {get_cpu_time_irq()}")
-print(f"8. Процент времени процессора на программные прерывания: {get_cpu_time_soft_irq()}")
-print(f"9. Процент времени простоя процессора: {get_cpu_time_idle()}")
-print(f"10. Процент времени процессора на ожидание результатов операций ввода-вывода: {get_cpu_time_io_wait()}")
+def all_cpu():
+    data = {
+        "physical_core": get_cpu_physical_core_count(),
+        "logical_core": get_cpu_logical_core_count(),
+        "usage_per_core": get_cpu_usage_per_core(),
+        "interrupt_count": get_interrupt_count(),
+        "cpu_user_proc": get_cpu_time_user(),
+        "cpu_system_proc": get_cpu_time_system(),
+        "cpu_irq_proc": get_cpu_time_irq(),
+        "cpu_soft_irq_proc": get_cpu_time_soft_irq(),
+        "cpu_idle_proc": get_cpu_time_idle(),
+        "cpu_io_wait_proc": get_cpu_time_io_wait()
+    }
+    return data

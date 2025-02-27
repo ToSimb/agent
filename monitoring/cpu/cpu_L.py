@@ -71,9 +71,8 @@ def get_cpu_usage():
         print(f"Произошла ошибка: {e}")
         return {}
 
-
-stat = {**parse_proc_stat(), **get_cpu_usage()}
-stat['cpu_logical_core_count'] = get_cpu_logical_core_count()
-stat['cpu_physical_core_count'] = get_cpu_physical_core_count()
-
-print(stat)
+def all_cpu():
+    data = {**parse_proc_stat(), **get_cpu_usage()}
+    data['cpu_logical_core_count'] = get_cpu_logical_core_count()
+    data['cpu_physical_core_count'] = get_cpu_physical_core_count()
+    return data
