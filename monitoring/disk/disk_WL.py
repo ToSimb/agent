@@ -37,14 +37,25 @@ def get_disk_data():
             for line in result.splitlines():
                 if "Temperature_Celsius" in line:
                     current_disk_data["temperature"] = int(line.split()[-1])
+                    continue
+                elif "Temperature:" in line:
+                    current_disk_data["temperature"] = int(line.split()[-2])
+                    continue
                 elif "Power_On_Hours" in line:
                     current_disk_data["power_on_hours"] = int(line.split()[-1])
+                    continue
+                elif "Power On Hours:" in line:
+                    current_disk_data["power_on_hours"] = int(line.split()[-1])
+                    continue
                 elif "Raw_Read_Error_Rate" in line or "Read_Error_Rate" in line:
                     current_disk_data["read_error_rate"] = int(line.split()[-1])
+                    continue
                 elif "Seek_Error_Rate" in line:
                     current_disk_data["seek_error_rate"] = int(line.split()[-1])
+                    continue
                 elif "Reallocated_Sector_Ct" in line:
                     current_disk_data["reallocated_sectors"] = int(line.split()[-1])
+                    continue
             data[disk[0]] = current_disk_data
     except Exception as e:
         print(f"Ошибка обработки вывода smartctl -A: {e}")

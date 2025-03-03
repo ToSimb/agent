@@ -1,68 +1,82 @@
 import json
-from  pysnmp.hlapi import *
+import ipaddress
+from pysnmp.hlapi import (SnmpEngine, CommunityData, UdpTransportTarget, ContextData, ObjectType, ObjectIdentity, getCmd)
 
 
-def snmp_get_bulk(oid, target, community='public', port=161):
-    """Запрашивает SNMP-данные по OID для всех интерфейсов."""
-    iterator = nextCmd(
-        snmpSnmpEngine(),
-        CommunityData(community, mpModel=0),
-        UdpTransportTarget((target, port)),
-        ContextData(),
-        ObjectType(ObjectIdentity(oid)),
-        lexicographicMode=False  # Останавливаем на другом OID
-    )
+def snmp_get(ip, community, oid):
+    try:
+        iterator = getCmd(
+            SnmpEngine(),
+            CommunityData(community, mpModel=0),
+            UdpTransportTarget((ip, 161), 1, 2),
+            ContextData(),
+            ObjectType(ObjectIdentity(oid))
+        )
 
-    results = {}
-    for errorIndication, errorStatus, errorIndex, varBinds in iterator:
+        errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
         if errorIndication:
-            print(f"SNMP error: {errorIndication}")
-            break
+            print(f"Ошибка SNMP на {ip}: {errorIndication}")
+            return None
         elif errorStatus:
-            print(f"SNMP error: {errorStatus.prettyPrint()}")
-            break
+            print(f"Ошибка SNMP на {ip}: {errorStatus.prettyPrint()}")
+            return None
         else:
             for varBind in varBinds:
-                index = str(varBind[0]).split('.')[-1]  # Последняя цифра в OID — номер интерфейса
-                results[index] = int(varBind[1]) if varBind[1].isNumeric() else None
-    return results
+                return str(varBind[1])
+    except Exception as e:
+        print(f"Исключение при SNMP-запросе {ip}: {e}")
+        return None
 
-# Функция сбора данных с устройства
-def collect_snmp_data(target, community):
-    """Собирает SNMP-метрики по всем интерфейсам устройства."""
+
+def discover_switches(network, community):
+    found_switches = []
+    print(f"Сканирование сети {network}...")
+    for ip in ipaddress.IPv4Network(network, strict=False):
+        sys_desc = snmp_get(str(ip), community, "1.3.6.1.2.1.1.1.0")
+        if sys_desc:
+            print(f"Обнаружен коммутатор: {ip}")
+            found_switches.append(str(ip))
+    return found_switches
+
+
+def collect_data(ip, community):
     oids = {
-        "out_traffic": "1.3.6.1.2.1.2.2.1.16",  # ifOutOctets
-        "max_speed": "1.3.6.1.2.1.2.2.1.5",    # ifSpeed
-        "in_errors": "1.3.6.1.2.1.2.2.1.14",   # ifInErrors
-        "out_errors": "1.3.6.1.2.1.2.2.1.20"   # ifOutErrors
+        "received_bytes": "1.3.6.1.2.1.2.2.1.10",
+        "received_packets": "1.3.6.1.2.1.2.2.1.11",
+        "incoming_speed": "1.3.6.1.2.1.31.1.1.1.6",
+        "incoming_load": "1.3.6.1.2.1.31.1.1.1.7",
+        "sent_bytes": "1.3.6.1.2.1.2.2.1.16",
+        "sent_packets": "1.3.6.1.2.1.2.2.1.17",
+        "outgoing_speed": "1.3.6.1.2.1.31.1.1.1.10",
+        "outgoing_load": "1.3.6.1.2.1.31.1.1.1.11",
+        "receive_errors": "1.3.6.1.2.1.2.2.1.14",
+        "send_errors": "1.3.6.1.2.1.2.2.1.20"
     }
 
-    device_data = {}
-
+    data = {}
+    print(f"Сбор данных с {ip}...")
     for key, oid in oids.items():
-        device_data[key] = snmp_get_bulk(oid, target, community)
+        value = snmp_get(ip, community, oid)
+        data[key] = value if value is not None else "N/A"
 
-    return device_data
+    return data
 
-# Читаем конфигурацию из файла
-def load_config(config_file="config.json"):
-    """Загружает список устройств и SNMP-параметры из JSON-файла."""
-    with open(config_file, "r") as file:
-        return json.load(file)
 
-# Основная функция
-def main():
-    config = load_config()
+if __name__ == "__main__":
+    network = "192.168.12.0/24"  # Укажите вашу подсеть
+    community = "public"  # SNMP community
+
+    switches = discover_switches(network, community)
     all_data = {}
 
-    for device in config["devices"]:
-        ip = device["ip"]
-        community = device["community"]
-        print(f"Сбор данных с {ip}...")
-        all_data[ip] = collect_snmp_data(ip, community)
+    if not switches:
+        print("Не найдено ни одного коммутатора! Проверьте SNMP-доступ.")
+    else:
+        for switch_ip in switches:
+            all_data[switch_ip] = collect_data(switch_ip, community)
 
-    print(json.dumps(all_data, indent=4))
+        with open("switch_data.json", "w") as f:
+            json.dump(all_data, f, indent=4)
 
-# Запуск
-if __name__ == "__main__":
-    main()
+        print("Данные сохранены в switch_data.json")

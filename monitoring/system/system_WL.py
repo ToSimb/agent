@@ -29,5 +29,13 @@ def get_uptime():
         return -1
 
 
-print(f"1. Средняя загрузка системы: {get_system_load()}")
-print(f"2. Время непрерывной работы системы: {get_uptime()}")
+def all_system():
+    data = {
+        "system_load": get_system_load(),
+        "uptime": get_uptime()
+    }
+    return data
+
+
+if __name__ == "__main__":
+    print(all_system())

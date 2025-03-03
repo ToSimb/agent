@@ -1,4 +1,4 @@
-from cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
+from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
 import subprocess
 import re
 
@@ -76,3 +76,6 @@ def all_cpu():
     data['cpu_logical_core_count'] = get_cpu_logical_core_count()
     data['cpu_physical_core_count'] = get_cpu_physical_core_count()
     return data
+
+if __name__ == "__main__":
+    print(all_cpu())

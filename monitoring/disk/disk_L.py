@@ -1,5 +1,5 @@
 import subprocess
-from disk_WL import get_disk_data
+from .disk_WL import get_disk_data
 
 
 def get_disk_usage():
@@ -95,3 +95,6 @@ def all_disk():
     except Exception as e:
         print(f"Критическая ошибка в программе: {e}")
         return {}
+
+if __name__ == "__main__":
+    print(all_disk())

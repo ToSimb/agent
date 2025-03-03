@@ -30,8 +30,12 @@ def all_gpu():
         return gpus_data
 
     except subprocess.CalledProcessError as e:
-        print(json.dumps({"error": f"Ошибка при выполнении nvidia-smi: {e}"}, indent=4))
+        print(f"Ошибка при выполнении nvidia-smi: {e}")
         return {}
     except Exception as e:
-        print(json.dumps({"error": f"Неизвестная ошибка: {e}"}, indent=4))
+        print(f"Неизвестная ошибка при мониторинге Nvidia GPU: {e}")
         return {}
+
+
+if __name__ == "__main__":
+    print(all_gpu())

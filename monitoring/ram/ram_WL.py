@@ -55,9 +55,16 @@ def get_swap_memory_free():
         return -1
 
 
-print(f"1. Общее количество оперативной памяти в системе: {get_virtual_memory_total()}")
-print(f"2. Количество занятой оперативной памяти в системе: {get_virtual_memory_used()}")
-print(f"3. Количество свободной оперативной памяти в системе: {get_virtual_memory_free()}")
-print(f"4. Общее количество swap-памяти в системе: {get_swap_memory_total()}")
-print(f"5. Количество занятой swap-памяти в системе: {get_swap_memory_used()}")
-print(f"6. количество свободной swap-памяти в системе: {get_swap_memory_free()}")
+def all_ram():
+    data = {
+        "total_ram": get_virtual_memory_total(),
+        "used_ram": get_virtual_memory_used(),
+        "free_ram": get_virtual_memory_free(),
+        "total_swap": get_swap_memory_total(),
+        "used_swap": get_swap_memory_used(),
+        "free_swap": get_swap_memory_free(),
+    }
+    return data
+
+if __name__ == "__main__":
+    print(all_ram())

@@ -1,4 +1,4 @@
-from cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
+from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
 import psutil
 
 
@@ -89,3 +89,7 @@ def all_cpu():
         "cpu_io_wait_proc": get_cpu_time_io_wait()
     }
     return data
+
+
+if __name__ == "__main__":
+    print(all_cpu())
