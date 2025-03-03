@@ -1,20 +1,4 @@
-import platform
 import psutil
-import os
-
-
-def get_system_load():
-    """Возвращает среднюю загрузку системы"""
-    try:
-        if platform.system() == "Linux":
-            load1, load5, load15 = os.getloadavg()
-            return load1
-        elif platform.system() == "Windows":
-            cpu_percent = psutil.cpu_percent(interval=1)
-            return cpu_percent
-    except Exception as e:
-        print(f"Ошибка сбора параметра \"Средняя загрузка системы\": \n{e}")
-        return -1
 
 
 def get_uptime():
@@ -28,14 +12,55 @@ def get_uptime():
         print(f"Ошибка сбора параметра \"Время непрерывной работы системы\": \n{e}")
         return -1
 
+def get_virtual_memory_total():
+    """Возвращает общее количество оперативной памяти в системе"""
+    try:
+        return psutil.virtual_memory().total
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Общее количество оперативной памяти в системе\": \n{e}")
+        return -1
 
-def all_system():
-    data = {
-        "system_load": get_system_load(),
-        "uptime": get_uptime()
-    }
-    return data
+
+def get_virtual_memory_used():
+    """Возвращает количество занятой оперативной памяти в системе"""
+    try:
+        return psutil.virtual_memory().used
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Количество занятой оперативной памяти в системе\": \n{e}")
+        return -1
 
 
-if __name__ == "__main__":
-    print(all_system())
+def get_virtual_memory_free():
+    """Возвращает количество свободной оперативной памяти в системе"""
+    try:
+        return psutil.virtual_memory().free
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Количество свобоной оперативной памяти в системе\": \n{e}")
+        return -1
+
+
+def get_swap_memory_total():
+    """Возвращает общее количество swap-памяти в системе"""
+    try:
+        return psutil.swap_memory().total
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Общее количество swap-памяти в системе\": \n{e}")
+        return -1
+
+
+def get_swap_memory_used():
+    """Возвращает количество занятой swap-памяти в системе"""
+    try:
+        return psutil.swap_memory().used
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Количество занятой swap-памяти в системе\": \n{e}")
+        return -1
+
+
+def get_swap_memory_free():
+    """Возвращает количество свободной swap-памяти в системе"""
+    try:
+        return psutil.swap_memory().free
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Количество свободной swap-памяти в системе\": \n{e}")
+        return -1

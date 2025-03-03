@@ -1,7 +1,4 @@
-from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
 import subprocess
-import psutil
-
 
 def get_cpu_metrics():
     try:
@@ -44,34 +41,5 @@ def get_cpu_metrics():
     return {"LogicalProcessors": cpu_data, **overall_metrics}
 
 
-def get_interrupt_count():
-    """Возвращает количество прерываний в системе"""
-    try:
-        return psutil.cpu_stats().interrupts
-    except Exception as e:
-        print(f"Ошибка сбора параметра \"Количество прерываний в системе\": \n{e}")
-        return -1
-
-
-def get_cpu_time_io_wait():
-    """Возвращает процент времени, которое центральный процессор простаивает в ожидании результатов операций ввода/вывода"""
-    try:
-        pass
-    except Exception as e:
-        print(f"Ошибка сбора параметра \"Процент времени простоя CPU в ожидании результатов операций ввода/вывода\": \n{e}")
-        return -1
-
-
-def all_cpu():
-    data = {
-        "physical_core": get_cpu_physical_core_count(),
-        "logical_core": get_cpu_logical_core_count(),
-        "interrupt_count": get_interrupt_count(),
-        "cpu_io_wait_proc": get_cpu_time_io_wait(),
-        **get_cpu_metrics()
-    }
-    return data
-
-
 if __name__ == "__main__":
-    print(all_cpu())
+    print(get_cpu_metrics())

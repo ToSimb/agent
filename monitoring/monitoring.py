@@ -1,16 +1,16 @@
 import platform 
 import json
 
-from ram.ram_WL import all_ram
-from system.system_WL import all_system
-
-
 def main():
     if platform.system() == "Linux":
+        from system.system_L import all_system
         from cpu.cpu_L import all_cpu
         from disk.disk_L import all_disk
+        from ram.ram_L import all_ram
         data = {"monitoring": {}}
     elif platform.system() == "Windows":
+        from system.system_W import all_system
+        from ram.ram_W import all_ram
         from cpu.cpu_W import all_cpu
         from disk.disk_W import all_disk
         from gpu_nvidia.gpuNvidia_W import all_gpu
