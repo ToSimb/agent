@@ -1,2 +1,2 @@
 def all_ram():
-    pass
+    return -1

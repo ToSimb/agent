@@ -1,31 +1,20 @@
-from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
+from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count, get_interrupt_count)
 import subprocess
+import psutil
 import re
 
-def parse_proc_stat():
-    """Собирает статистику CPU из /proc/stat"""
-    cpu_data = {}
+
+def get_logical_processor_usage():
     try:
-        with open("/proc/stat", "r") as f:
-            lines = f.readlines()
-        cpu_loads = []
-        for line in lines[1:]:
-            if line.startswith("intr"):
-                cpu_data["interrupts"] = int(line.split()[1])
-            if line.startswith("cpu"):
-                cpu_fields = line.split()
-                cpu_loads.append(100 - (int(cpu_fields[4]) / sum(map(int, cpu_fields[1:])) * 100))
-        cpu_data["cpu_loads"] = cpu_loads
-        return cpu_data
+        cpu_load = psutil.cpu_percent(interval=1, percpu=True)
+        return cpu_load
     except Exception as e:
-        print(f"Ошибка при обработке /proc/stat: {e}")
-        return None
+        print(f"Ошибка при получении загрузки логических процессоров: {e}")
+        return -1
 
 
 def get_cpu_usage():
-    """
-    Получает процент загрузки CPU с помощью команды top.
-    """
+    """Получает процент загрузки CPU с помощью команды top"""
     try:
         # Запускаем команду top в режиме.batch (без интерактивного режима) и получаем один снимок данных
         result = subprocess.run(['top', '-bn1'], stdout=subprocess.PIPE, text=True)
@@ -72,9 +61,13 @@ def get_cpu_usage():
         return {}
 
 def all_cpu():
-    data = {**parse_proc_stat(), **get_cpu_usage()}
-    data['cpu_logical_core_count'] = get_cpu_logical_core_count()
-    data['cpu_physical_core_count'] = get_cpu_physical_core_count()
+    data = {
+            'cpu_logical_core_count': get_cpu_logical_core_count(),
+            'cpu_physical_core_count': get_cpu_physical_core_count(),
+            'LogicalProcessors': get_logical_processor_usage(),
+            'interrupt_count': get_interrupt_count(),
+            **get_cpu_usage()
+            }
     return data
 
 if __name__ == "__main__":

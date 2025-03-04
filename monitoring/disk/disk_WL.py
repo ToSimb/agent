@@ -29,10 +29,10 @@ def get_disk_data():
         return
 
     data = {}
-
     try:
         for disk in disks:
             current_disk_data = {}
+            data[disk[0]] = {}
             result = run_smartctl_command(['smartctl', '-A', disk[1], disk[2], disk[0]])
             for line in result.splitlines():
                 if "Temperature_Celsius" in line:

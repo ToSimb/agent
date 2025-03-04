@@ -16,3 +16,11 @@ def get_cpu_logical_core_count():
     except Exception as e:
         print(f"Ошибка сбора параметра \"Количество логических ядер\": \n{e}")
         return -1
+
+def get_interrupt_count():
+    """Возвращает количество прерываний в системе"""
+    try:
+        return psutil.cpu_stats().interrupts
+    except Exception as e:
+        print(f"Ошибка сбора параметра \"Количество прерываний в системе\": \n{e}")
+        return -1

@@ -31,10 +31,10 @@ def all_gpu():
 
     except subprocess.CalledProcessError as e:
         print(f"Ошибка при выполнении nvidia-smi: {e}")
-        return {}
+        return []
     except Exception as e:
         print(f"Неизвестная ошибка при мониторинге Nvidia GPU: {e}")
-        return {}
+        return []
 
 
 if __name__ == "__main__":

@@ -2,19 +2,28 @@ import platform
 import json
 
 def main():
+    data = {"monitoring": {
+        "cpu": None,
+        "ram": None,
+        "system": None,
+        "disks": None,
+        "lvol": None,
+        "gpu": None
+    }}
     if platform.system() == "Linux":
         from system.system_L import all_system
         from cpu.cpu_L import all_cpu
         from disk.disk_L import all_disk
         from ram.ram_L import all_ram
-        data = {"monitoring": {}}
+        from lvol.lvol_L import all_lvol
     elif platform.system() == "Windows":
+        from lvol.lvol_W import all_lvol
         from system.system_W import all_system
         from ram.ram_W import all_ram
         from cpu.cpu_W import all_cpu
         from disk.disk_W import all_disk
         from gpu_nvidia.gpuNvidia_W import all_gpu
-        data = {"monitoring": {"gpu": all_gpu()}}
+        data["monitoring"]["gpu"] = all_gpu()
     else:
         print("Операционная система не поддерживается программой")
         return -1
@@ -23,7 +32,8 @@ def main():
         "cpu": all_cpu(),
         "ram": all_ram(),
         "system": all_system(),
-        "disks": all_disk()
+        "disks": all_disk(),
+        "lvol": all_lvol()
     })
     return json.dumps(data, indent=4)
 

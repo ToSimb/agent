@@ -1,6 +1,5 @@
-from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count)
+from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count, get_interrupt_count)
 import subprocess
-import psutil
 
 
 def get_cpu_metrics():
@@ -35,22 +34,13 @@ def get_cpu_metrics():
                     })
                 else:
                     cpu_data.append({
-                        "LogicalProcessor": cpu_info["Name"],
+                        "id": cpu_info["Name"],
                         "Usage": float(cpu_info["PercentProcessorTime"])
                     })
     except Exception as e:
         print(f"Ошибка обработки вывода команды wmic: {e}")
         return -1
     return {"LogicalProcessors": cpu_data, **overall_metrics}
-
-
-def get_interrupt_count():
-    """Возвращает количество прерываний в системе"""
-    try:
-        return psutil.cpu_stats().interrupts
-    except Exception as e:
-        print(f"Ошибка сбора параметра \"Количество прерываний в системе\": \n{e}")
-        return -1
 
 
 def get_cpu_time_io_wait():
