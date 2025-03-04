@@ -1,9 +1,30 @@
-from .cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count, get_interrupt_count)
+from cpu_WL import (get_cpu_logical_core_count, get_cpu_physical_core_count, get_interrupt_count)
 import subprocess
+import time
+
+def get_cpu_names():
+    try:
+        qwert1 = time.time()
+        result = subprocess.run(
+            ["wmic", "cpu", "get", "Name"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        lines = result.stdout.strip().split("\n")
+        cpu_names = [line.strip() for line in lines[1:] if line.strip()]
+        qwert2 = time.time()
+        print("получение имен")
+        print(qwert2 - qwert1)
+        return cpu_names
+    except Exception as e:
+        print(f"Ошибка при получении списка процессоров: {e}")
+        return []
 
 
 def get_cpu_metrics():
     try:
+        qwert1 = time.time()
         cmd = "wmic path Win32_PerfFormattedData_PerfOS_Processor get Name,PercentProcessorTime,PercentInterruptTime,PercentDPCTime,PercentIdleTime,PercentUserTime,PercentPrivilegedTime /format:csv"
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode != 0:
@@ -40,6 +61,9 @@ def get_cpu_metrics():
     except Exception as e:
         print(f"Ошибка обработки вывода команды wmic: {e}")
         return -1
+    qwert2 = time.time()
+    print("получение параметров wmic")
+    print(qwert2 - qwert1)
     return {"LogicalProcessors": cpu_data, **overall_metrics}
 
 
@@ -54,6 +78,7 @@ def get_cpu_time_io_wait():
 
 def all_cpu():
     data = {
+        "cpu_names": get_cpu_names(),
         "physical_core": get_cpu_physical_core_count(),
         "logical_core": get_cpu_logical_core_count(),
         "interrupt_count": get_interrupt_count(),

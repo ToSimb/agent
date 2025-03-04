@@ -1,4 +1,4 @@
-from .lvol_WL import get_lvol_data
+from lvol_WL import get_lvol_data
 
 
 def all_lvol():
