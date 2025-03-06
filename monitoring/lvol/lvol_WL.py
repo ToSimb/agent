@@ -1,22 +1,32 @@
 import psutil
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+def get_usage(partition):
+    """Получаем данные о разделе"""
+    try:
+        usage = psutil.disk_usage(partition.mountpoint)
+        return {
+            'name': partition.device,
+            'mountpoint': partition.mountpoint,
+            'total': usage.total or -1,
+            'free': usage.free or -1,
+            'used': usage.used or -1
+        }
+    except Exception as e:
+        print(f"Ошибка получения данных о разделе {partition.device}: {e}")
+        return None
 
 def get_lvol_data():
-    # Получаем список всех разделов
+    """Получаем информацию о всех разделах с оптимизацией"""
+    start_time = time.time()
     partitions = psutil.disk_partitions()
     data = []
 
-    # Проходимся по каждому разделу и получаем информацию о нем
-    for partition in partitions:
-        try:
-            usage = psutil.disk_usage(partition.mountpoint)
-            current_lvol = dict()
-            current_lvol['name'] = partition.device
-            current_lvol['mountpoint'] = partition.mountpoint
-            current_lvol['total'] = usage.total
-            current_lvol['free'] = usage.free
-            current_lvol['used'] = usage.used
-            data.append(current_lvol)
-        except Exception as e:
-            print(f"Ошибка получения данных о разделах: {e}")
-    return data
+    # Используем ThreadPoolExecutor для параллельной обработки данных о разделах
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(get_usage, partitions)
+
+        data = [result for result in results if result is not None]
+    print("Время сбора параметров LVOL:", time.time() - start_time)
+    return data, time.time() - start_time

@@ -15,7 +15,7 @@ def get_cpu_info():
     time_start = time.time()
 
     # Открываем файл для записи
-    with open("2.txt", "w", encoding="utf-8") as f:
+    with open("cpu2.txt", "w", encoding="utf-8") as f:
         # Получаем общую информацию о процессорах
         cpu_info = run_wmic(
             "wmic cpu get DeviceID, Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, CurrentClockSpeed, LoadPercentage /format:csv")

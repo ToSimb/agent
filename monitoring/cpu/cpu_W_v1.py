@@ -14,7 +14,7 @@ def get_cpu_info():
     time_get_c = time.time()
 
     # Открываем файл для записи
-    with open("1.txt", "w", encoding="utf-8") as f:
+    with open("cpu1.txt", "w", encoding="utf-8") as f:
         # Получаем данные по каждому процессору
         cpus = c.Win32_Processor()
         time_get_cpus = time.time()
