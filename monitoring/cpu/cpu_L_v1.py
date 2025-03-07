@@ -1,6 +1,5 @@
 import subprocess
 import time
-import threading
 import re
 
 
@@ -37,18 +36,19 @@ def get_cpu_info():
 def get_logical_core_info():
     """Получает загрузку логических ядер через mpstat."""
     start_time = time.time()
-    output = run_command("mpstat -P ALL 1 1")
+    output = run_command("mpstat -P ALL")
     logical_cores = []
 
     lines = output.split("\n")
     for line in lines:
+        print(line)
         parts = re.split(r'\s+', line.strip())
         if len(parts) > 10 and parts[1].isdigit():
             logical_cores.append({
                 "Type": "logical core",
-                "ProcessorID": int(parts[1]),
-                "PercentIdleTime": float(parts[-1]),
-                "PercentProcessorTime": 100.0 - float(parts[-1]),
+                "CoreID": int(parts[1]),
+                "PercentIdleTime": float(parts[-1].replace(",", ".")),
+                "PercentProcessorTime": 100.0 - float(parts[-1].replace(",", ".")),
             })
 
     print("Время сбора параметров логических ядер:", time.time() - start_time)
@@ -63,17 +63,11 @@ def save_to_file(data, filename="cpu_l.txt"):
 
 
 def all_cpu():
-    """Получает информацию о CPU и логических ядрах параллельно."""
+    """Получает информацию о CPU и логических ядрах последовательно."""
     start_time = time.time()
 
-    cpu_result, logical_core_result = [], []
-    cpu_thread = threading.Thread(target=lambda: cpu_result.extend(get_cpu_info()))
-    logical_core_thread = threading.Thread(target=lambda: logical_core_result.extend(get_logical_core_info()))
-
-    cpu_thread.start()
-    logical_core_thread.start()
-    cpu_thread.join()
-    logical_core_thread.join()
+    cpu_result = get_cpu_info()
+    logical_core_result = get_logical_core_info()
 
     print("Полное время сбора параметров CPU:", time.time() - start_time)
     return cpu_result + logical_core_result

@@ -27,7 +27,7 @@ parse_start = time.time()
 
 # Формируем строку с системной информацией
 output = []
-output.append(f"Аптайм (секунды): {uptime_seconds if uptime_seconds != -1 else '-1'}")
+output.append(f"Аптайм (секунды): {int(uptime_seconds) if uptime_seconds != -1 else '-1'}")
 output.append(f"Виртуальная память - всего: {vm.total if vm != -1 else '-1'} байт")
 output.append(f"Виртуальная память - использовано: {vm.used if vm != -1 else '-1'} байт")
 output.append(f"Виртуальная память - свободно: {vm.free if vm != -1 else '-1'} байт")

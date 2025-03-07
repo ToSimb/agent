@@ -1,5 +1,5 @@
 import subprocess
-from .disk_WL import get_disk_data
+from disk_WL import get_disk_data
 
 
 def get_disk_speed():
