@@ -94,7 +94,7 @@ def parse_disk(disk):
 
 
 # Запись в файл вместо вывода в консоль
-with open("disks.txt", "w", encoding="utf-8") as file:
+with open("disks_W.txt", "w", encoding="utf-8") as file:
     disks, time_disks = measure_time(get_disk_list)
     if not disks:
         file.write("Диски не найдены.\n")
@@ -119,7 +119,6 @@ with open("disks.txt", "w", encoding="utf-8") as file:
             file.write(f"  Количество переназначенных секторов: {current_disk_data['Reallocated_Sector_Ct']}\n")
             file.write(f" + Время получения данных: {time_current_disk_data:.4f} секунд\n")
             if id_disk is not None:
-                print(disk_speeds)
                 speeds_disk = disk_speeds[str(id_disk)]
                 file.write(f"  Скорость чтения: {speeds_disk['read']} байт/сек\n")
                 file.write(f"  Скорость записи: {speeds_disk['write']} байт/сек\n")
