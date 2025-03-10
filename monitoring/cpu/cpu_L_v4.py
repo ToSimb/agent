@@ -12,6 +12,7 @@ def get_cpu_stats():
     times = psutil.cpu_times(percpu=True)
 
     for i in range(cpu_count):
+        print(times[i])
         user_time = times[i].user
         system_time = times[i].system
         idle_time = times[i].idle

@@ -24,6 +24,7 @@ with open('cpu_mpstat.txt', 'w') as file:  # Открываем файл для 
     file.write("--------------------------------------------------\n")
     for line in lines[3:]:  # Пропускаем первые три строки заголовка
         columns = line.split()
+        print(columns)
         if len(columns) > 0:
             file.write(f"Процессор: {columns[1]}\n")
             file.write(f"  %user: {columns[2]} (время, проведенное в пользовательском режиме)\n")
