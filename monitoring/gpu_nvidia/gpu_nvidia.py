@@ -5,7 +5,6 @@ import uuid
 class GPUsMonitor:
     def __init__(self):
         self.gpus = {}
-        print(len(self.gpus))
         result = subprocess.run(
             ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"],
             capture_output=True, text=True, check=True
@@ -14,8 +13,6 @@ class GPUsMonitor:
             if uuid:
                 self.gpus[uuid.strip()] = uuid
                 self.gpus[uuid] = GPU(uuid)
-        print(len(self.gpus))
-        print("!!!!!!!!!!!!!!!!!!!!!!!!11")
 
     def validate_value_int(self, value):
         try:
@@ -64,7 +61,6 @@ class GPUsMonitor:
     def get_all(self):
         for uuid in self.gpus.values():
             aaa = uuid.get_params_all()
-            print(aaa)
 
     def get_item_all(self, uuid: str):
         try:
@@ -74,9 +70,9 @@ class GPUsMonitor:
 
     def get_item(self, uuid: str, metric_id:str):
         try:
-            return self.gpus.get(uuid).get_gpu(metric_id)
+            return self.gpus.get(uuid).get_metric(metric_id)
         except:
-            print("ошибка")
+            print(f"ошибка - {uuid}: {metric_id}")
             return None
 
 
