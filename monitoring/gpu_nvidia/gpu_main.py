@@ -9,17 +9,17 @@ def measure_time(func, *args, **kwargs):
 
 gpus, time_init = measure_time(GPUsMonitor)
 
-get1, time_get1 = measure_time(gpus.get_gpus_all,"GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
+get1, time_get1 = measure_time(gpus.get_item_all, "GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
 print(get1)
 
 _, time_update = measure_time(gpus.update)
 
-get2, time_get2 = measure_time(gpus.get_gpus_all,"GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
+get2, time_get2 = measure_time(gpus.get_item_all, "GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
 print(get2)
 
-get_item, time_item = measure_time(gpus.get_gpu,"GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54", "gpu.index")
+get_item, time_item = measure_time(gpus.get_item, "GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54", "gpu.index")
 print(get_item)
-get3, time_get3 = measure_time(gpus.get_gpus_all,"GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
+get3, time_get3 = measure_time(gpus.get_item_all, "GPU-00a97fdd-bdb8-ae1d-07c2-86dacb0e1b54")
 print(get3)
 
 print("-"*25)
@@ -29,3 +29,8 @@ print(time_update)
 print(time_get2)
 print(time_item)
 print(time_get3)
+
+
+print("-"*25)
+
+get_all, time_all = measure_time(gpus.get_all)

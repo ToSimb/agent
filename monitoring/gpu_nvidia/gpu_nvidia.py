@@ -5,12 +5,17 @@ import uuid
 class GPUsMonitor:
     def __init__(self):
         self.gpus = {}
+        print(len(self.gpus))
         result = subprocess.run(
             ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"],
             capture_output=True, text=True, check=True
         )
         for uuid in result.stdout.split("\n"):
-            self.gpus[uuid] = GPU(uuid)
+            if uuid:
+                self.gpus[uuid.strip()] = uuid
+                self.gpus[uuid] = GPU(uuid)
+        print(len(self.gpus))
+        print("!!!!!!!!!!!!!!!!!!!!!!!!11")
 
     def validate_value_int(self, value):
         try:
@@ -36,6 +41,7 @@ class GPUsMonitor:
         except:
             print("No GPUs found")
             return None
+
         for line in lines:
             values = line.split(", ")
             if values[1] in self.gpus:
@@ -55,12 +61,18 @@ class GPUsMonitor:
             else:
                 print(f"uuid {values[1]} - не найден в списке объектов")
 
-    def get_gpus_all(self, uuid: str):
+    def get_all(self):
+        for uuid in self.gpus.values():
+            aaa = uuid.get_params_all()
+            print(aaa)
+
+    def get_item_all(self, uuid: str):
         try:
             return self.gpus.get(uuid).get_params_all()
         except:
             return None
-    def get_gpu(self, uuid: str, metric_id:str):
+
+    def get_item(self, uuid: str, metric_id:str):
         try:
             return self.gpus.get(uuid).get_gpu(metric_id)
         except:
@@ -89,14 +101,14 @@ class GPU:
     def get_params_all(self):
         return self.params
 
-    def get_gpu(self, metric_id: str):
+    def get_metric(self, metric_id: str):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
                 self.params[metric_id] = None
                 return result
             else:
-                raise KeyError(f"Ключ {metric_id} не найден в словаре.")
-        except:
-            print(f"Ошибка в запросе метрики {metric_id}")
+                raise KeyError(f"Ключ не найден в словаре.")
+        except Exception as e:
+            print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
