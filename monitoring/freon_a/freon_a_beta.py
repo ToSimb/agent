@@ -25,6 +25,8 @@ def parse_response_data_FA (fa: dict):
                     "unit.I": i_stat.get("units")[0].get("I"),
                 }
                 data_dict.append(i_data)
+            else:
+                print(i)
 
         else:
             error_ips.append(i.get("name"))
