@@ -20,3 +20,4 @@ obj_fa.update()
 print(obj_fa.get_item("192.168.85.137","unit.U"))
 
 print(time.time()-time_1)
+
