@@ -1,3 +1,5 @@
+from time import process_time_ns
+
 import psutil
 import time
 
@@ -14,13 +16,13 @@ def calculate_speed_and_load(previous_stats, current_stats, interval, max_bandwi
     load_recv = get_load(recv_speed, max_bandwidth)
     load_sent = get_load(sent_speed, max_bandwidth)
     return recv_speed, sent_speed, load_recv, load_sent
-
+time_a = time.time()
 previous_stats = psutil.net_io_counters(pernic=True)
 time.sleep(INTERVAL)
 current_stats = psutil.net_io_counters(pernic=True)
-
+time_b = time.time()
 bandwidth_stats = psutil.net_if_stats()
-
+time_c = time.time()
 with open("network_stats.txt", "w", encoding="utf-8") as file:
     # Выводим статистику
     for interface_name in current_stats.keys():
@@ -46,3 +48,6 @@ with open("network_stats.txt", "w", encoding="utf-8") as file:
             file.write(f"    Ошибки при приеме: {current_stats[interface_name].errin}\n")
             file.write(f"    Ошибки при отправке: {current_stats[interface_name].errout}\n")
             file.write("-" * 50 + "\n")
+
+print(time_b - time_a)
+print(time_c - time_b)
