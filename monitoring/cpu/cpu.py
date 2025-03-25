@@ -1,67 +1,134 @@
 import time
-
 import psutil
 import subprocess
 import platform
 
 class CPUsMonitor:
     def __init__(self):
+        """
+        Инициализация экземпляра класса.
+
+        Атрибуты:
+            cpus (dict): Словарь, где ключ - физический идентификатор процессора (сокета),
+                          а значением - название модели процессора.
+                          Пример: {'0': 'AMD Ryzen 5 3600X 6-Core Processor',
+                                    '1': 'AMD Ryzen 5 3600X 6-Core Processor'}
+            cores (dict): Словарь, где ключ - идентификатор процессора (логического потока),
+                           а значением - объект класса Core, представляющий ядро процессора.
+                           Пример: {'0': <__main__.Core object at 0x79853a7bdee0>,
+                                     '1': <__main__.Core object at 0x79853a654d60>}
+            cores_info (dict): Словарь, где ключ - идентификатор процессора (логического потока),
+                               а значением - строка, представляющая информацию о его месте в системе.
+                               Пример: {'0': 'cpu:0:0', '1': 'cpu:0:1', ...}
+            system (str): Название операционной системы (например, 'Linux').
+        """
         self.cpus = {}
+        self.cores = {}
         self.cores_info = {}
+        self.item_index = {}
         self.system = platform.system()
         if self.system == 'Linux':
-            cpu_info, self.cores_info = self.__get_linux_info()
-            for cpu in cpu_info.keys():
-                self.cpus[cpu] = Cpu(cpu_info[cpu]["model_name"], cpu_info[cpu]["physicals_id"])
+            cores_infor = self.__get_linux_info()
+            for core_line in cores_infor:
+                if core_line["physical_id"] not in self.cpus:
+                    self.cpus[core_line["physical_id"]] = core_line["model_name"]
+                self.cores[core_line['processor_id']] = Core()
+                self.cores_info[core_line['processor_id']] = f"cpu:{core_line['physical_id']}:{core_line['physical_core_id']}"
 
     def __get_linux_info(self):
-        processor_info = {}
+        """
+        Получает информацию о процессорах из файла /proc/cpuinfo.
+
+        Возвращает:
+            list: Список словарей, каждый из которых содержит информацию о процессоре.
+                  Пример формата выходных данных:
+                  {'processor_id': '0', 'model_name': 'AMD Ryzen ..', 'physical_id': '0', 'physical_core_id': '0'}
+                  {'processor_id': '1', 'model_name': 'AMD Ryzen ..', 'physical_id': '0', 'physical_core_id': '1'}
+                  ...
+        """
         with open('/proc/cpuinfo', 'r') as f:
+            processor_info = []
+            current_processor = {}
+            count_processor = {}
             for line in f:
                 if line.startswith("processor"):
-                    processor_id = line.split(":")[1].strip()
-                    processor_info[processor_id] = {}
+                    if current_processor:
+                        processor_info.append(current_processor)
+                        current_processor = {}
+                    current_processor['processor_id'] = line.split(":")[1].strip()
                 elif line.startswith("physical id"):
-                    physical_id = line.split(":")[1].strip()
-                    processor_info[processor_id]['physical_id'] = physical_id
+                    current_processor['physical_id'] = line.split(":")[1].strip()
+
+                    # *!*!*!*!* ДЛЯ ТЕСТИРОВАНИЯ *!*!*!*!*
+                    # if int(current_processor['processor_id']) > 1:
+                    #     current_processor['physical_id'] = str(int(line.split(":")[1].strip())+1)
+                    # else:
+                    #     current_processor['physical_id'] = line.split(":")[1].strip()
+
+                    #для разделения по core внутри cpu
+                    if current_processor['physical_id'] not in count_processor:
+                        count_processor[current_processor['physical_id']] = 0
+                    current_processor["physical_core_id"] = str(count_processor[current_processor['physical_id']])
+                    count_processor[current_processor['physical_id']] += 1
+
                 elif line.startswith("model name"):
-                    model_name = line.split(":")[1].strip()
-                    processor_info[processor_id]['model_name'] = model_name
-        cpu_info = {}
-        cores_info = {}
+                    current_processor['model_name'] = line.split(":")[1].strip()
+            if current_processor:
+                processor_info.append(current_processor)
+        return processor_info
 
-        for cpu in cpu_info:
-            cpu_info[cpu] = {}
+    def get_objects(self):
+        return self.cores_info
 
-        for processor_id, info in processor_info.items():
-            # Типа тест на 2 процессора
-            if int(processor_id) > 1:
-                info["physical_id"] = 1
-            if info['physical_id'] not in cpu_info:
-                cpu_info[info['physical_id']] = {
-                    "model_name": info['model_name'],
-                    "physicals_id": []
-                }
-            cpu_info[info['physical_id']]['physicals_id'].append(processor_id)
-            cores_info[processor_id] = info['physical_id']
-        return cpu_info, cores_info
+    def create_index(self, cpu_dict):
+        for index in cpu_dict:
+            if cpu_dict[index] is not None:
+                for key, value in self.cores_info.items():
+                    if value == index:
+                        self.item_index[cpu_dict[index]] = self.cores.get(key, None)
+                        break
+            else:
+                print(f'Для индекса {index} нет значения')
+        return self.item_index
 
     def update(self):
-        update_data = {}
+        """
+        Обновляет информацию о загрузке процессоров.
+
+        Описание data_line для Linux:
+        proc_id ['%usr', '%nice', '%sys', '%iowait', '%irq', '%soft', '%steal', '%guest', '%gnice', '%idle', '%load']
+        Пример вывода:
+            0 ['5,20', '0,00', '0,46', '0,17', '0,00', '0,05', '0,00', '0,00', '0,00', '94,12', '2.0']
+            1 ['5,28', '0,02', '0,39', '0,25', '0,00', '0,00', '0,00', '0,00', '0,00', '94,06', '3.9']
+        """
         if self.system == 'Linux':
             cores_info = self.__get_core_mpstat_linux()
             load = psutil.cpu_percent(interval=0.5, percpu=True)
             for index_core in range(len(self.cores_info)):
-                if self.cores_info[str(index_core)] not in update_data:
-                    update_data[self.cores_info[str(index_core)]] = []
                 data_line = cores_info[str(index_core)] + [str(load[index_core])]
-                update_data[self.cores_info[str(index_core)]].append( {str(index_core): data_line})
-
-            for cpu_key in self.cpus.keys():
-                print("CPU", cpu_key)
-                self.cpus[cpu_key].update(update_data[cpu_key])
+                self.cores[str(index_core)].update(data_line)
 
     def __get_core_mpstat_linux(self):
+        """
+        Получает информацию о загрузке процессоров с помощью команды mpstat.
+
+        Обрабатывает:
+            columns (list):
+                Формат:
+                    ['16:59:27', 'CPU', '%usr', '%nice', '%sys', '%iowait', '%irq', '%soft', '%steal', '%guest', '%gnice', '%idle']
+                Пример формата выходных данных:
+                {
+                    ['16:59:27', 'all', '1,63', '0,05', '0,29', '0,25', '0,00', '0,01', '0,00', '0,00', '0,00', '97,77']
+                    ['16:59:27', '0', '1,68', '0,07', '0,27', '0,25', '0,00', '0,02', '0,00', '0,00', '0,00', '97,71']
+                }
+
+        Возвращает:
+            dict: {
+                  'all': ['1,63', '0,05', '0,29', '0,25', '0,00', '0,01', '0,00', '0,00', '0,00', '97,77'],
+                  '0': ['1,68', '0,07', '0,27', '0,25', '0,00', '0,02', '0,00', '0,00', '0,00', '97,71'],
+                  '1': ['1,63', '0,06', '0,37', '0,25', '0,00', '0,00', '0,00', '0,00', '0,00', '97,69'],
+              }
+        """
         try:
             output = {}
             result = subprocess.run(['mpstat', '-P', 'ALL', '0'], capture_output=True, text=True, check=True)
@@ -73,49 +140,31 @@ class CPUsMonitor:
             return output
         except Exception as e:
             print(f"Ошибка при выполнении команды mpstat: {e}")
-            output = {}
+            return {}
 
     def get_all(self):
-        for cpu in self.cpus.keys():
-            print("CPU", cpu)
-            self.cpus[cpu].get_all()
+        return_list = []
+        for index_cores in self.cores.keys():
+            result = self.cores[index_cores].get_params_all()
+            return_list.append({index_cores: result})
+        return return_list
 
-    def get_item2(self, cpu: str, core: str, metric_id: str):
+    def get_item(self, irem_id, metric_id: str):
         try:
-            return self.cpus.get(cpu).get_item(core, metric_id)
-        except:
-            print(f"ошибка - {cpu}: {metric_id}")
+            return self.item_index.get(irem_id).get_metric(metric_id)
+        except Exception as e:
+            print(f"ошибка - {irem_id}: {metric_id} - {e}")
             return None
 
-class Cpu:
-    def __init__(self, model_name, physicals_id):
-        self.model_name = model_name
-        self.cores = {}
-        self.cores_ids = {}
-        for index in range(len(physicals_id)):
-            self.cores_ids[physicals_id[index]] = index
-            self.cores[str(index)] = Core(physicals_id[index])
-
-    def update(self, update_data):
-        for index in update_data:
-            idd = list(index.keys())[0]
-            self.cores[str(self.cores_ids[idd])].update(index[idd])
-
-    def get_all(self):
-        for core in self.cores.keys():
-            params = self.cores[core].get_params_all()
-            print("Core", core, params)
-
-    def get_item(self, core: str, metric_id: str):
+    def get_item_origin(self, core: str, metric_id: str):
         try:
             return self.cores.get(core).get_metric(metric_id)
-        except:
-            print(f"ошибка - {core}: {metric_id}")
+        except Exception as e:
+            print(f"ошибка - {core}: {metric_id} - {e}")
             return None
 
 class Core:
-    def __init__(self, physicals_id):
-        self.physicals_id = physicals_id
+    def __init__(self):
         self.system = platform.system()
         self.params = {
             'сore.user.time': None,
@@ -128,7 +177,6 @@ class Core:
         }
 
     def update(self, update_line):
-        print(f"core {self.physicals_id}", update_line)
         if self.system == 'Linux':
             params_new = {
                 'сore.user.time': update_line[0],
@@ -155,19 +203,3 @@ class Core:
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
-
-
-time_start = time.time()
-aa = CPUsMonitor()
-print("init", time.time()-time_start)
-print("_"*30)
-time_update = time.time()
-aa.update()
-print("update", time.time()-time_update)
-print("_"*30)
-time_get_all = time.time()
-aa.get_all()
-print("get_all", time.time()-time_get_all)
-print("_"*30)
-time_get_item = time.time()
-print(aa.get_item2('0','1', 'сore.idle.time'))
