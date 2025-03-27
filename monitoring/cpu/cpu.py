@@ -77,7 +77,7 @@ class CPUsMonitor:
                 processor_info.append(current_processor)
         return processor_info
 
-    def get_objects(self):
+    def get_objects_describtion(self):
         return self.cores_info
 
     def create_index(self, cpu_dict):
@@ -85,11 +85,11 @@ class CPUsMonitor:
             if cpu_dict[index] is not None:
                 for key, value in self.cores_info.items():
                     if value == index:
-                        self.item_index[cpu_dict[index]] = self.cores.get(key, None)
+                        self.item_index[str(cpu_dict[index])] = self.cores.get(key, None)
                         break
             else:
                 print(f'Для индекса {index} нет значения')
-        return self.item_index
+        print("Индексы для CPU обновлены")
 
     def update(self):
         """
@@ -107,6 +107,7 @@ class CPUsMonitor:
             for index_core in range(len(self.cores_info)):
                 data_line = cores_info[str(index_core)] + [str(load[index_core])]
                 self.cores[str(index_core)].update(data_line)
+            print(time.time(), "Выполнено обновление CPU")
 
     def __get_core_mpstat_linux(self):
         """
@@ -149,11 +150,11 @@ class CPUsMonitor:
             return_list.append({index_cores: result})
         return return_list
 
-    def get_item(self, irem_id, metric_id: str):
+    def get_item(self, item_id: str, metric_id: str):
         try:
-            return self.item_index.get(irem_id).get_metric(metric_id)
+            return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"ошибка - {irem_id}: {metric_id} - {e}")
+            print(f"ошибка - {item_id}: {metric_id} - {e}")
             return None
 
     def get_item_origin(self, core: str, metric_id: str):
@@ -167,25 +168,25 @@ class Core:
     def __init__(self):
         self.system = platform.system()
         self.params = {
-            'сore.user.time': None,
-            'сore.system.time': None,
-            'сore.irq.time': None,
-            'сore.softirq.time': None,
-            'сore.idle.time': None,
-            'сore.iowait': None,
-            'сore.load': None
+            'core.user.time': None,
+            'core.system.time': None,
+            'core.irq.time': None,
+            'core.softirq.time': None,
+            'core.idle.time': None,
+            'core.iowait': None,
+            'core.load': None
         }
 
     def update(self, update_line):
         if self.system == 'Linux':
             params_new = {
-                'сore.user.time': update_line[0],
-                'сore.system.time': update_line[2],
-                'сore.irq.time': update_line[4],
-                'сore.softirq.time': update_line[5],
-                'сore.idle.time': update_line[9],
-                'сore.iowait': update_line[3],
-                'сore.load': update_line[10]
+                'core.user.time': update_line[0],
+                'core.system.time': update_line[2],
+                'core.irq.time': update_line[4],
+                'core.softirq.time': update_line[5],
+                'core.idle.time': update_line[9],
+                'core.iowait': update_line[3],
+                'core.load': update_line[10]
             }
             self.params.update(params_new)
 
