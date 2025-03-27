@@ -1,41 +1,93 @@
+import threading
 import json
 import time
-import os
 
 from cpu.cpu import CPUsMonitor
 
-def measure_execution_time(func, *args, **kwargs):
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    end_time = time.time()
-    execution_time = end_time - start_time
-    return result, execution_time
+stop_event = threading.Event()
 
-def cpu_start():
-    cpu_instance, time_cpu_int = measure_execution_time(CPUsMonitor)
-    _, time_cpu_update = measure_execution_time(cpu_instance.update)
-    cpu_objects, time_cpu_get_obj = measure_execution_time(cpu_instance.get_objects)
+def periodic_update(object_monitor, interval):
+    while not stop_event.is_set():
+        time_start = time.time()
+        object_monitor.update()
+        time_update = time.time() - time_start
+        if time_update < interval:
+            time.sleep(interval - time_update)
 
+def create_index_for_cpu(object_monitor):
     cpu_file_name = 'settings_file/cpu.txt'
-    if not os.path.isfile(cpu_file_name):
-        with open(cpu_file_name, 'w') as cpu_file:
-            cpu_file_return = {}
-            for index_cpu in cpu_objects:
-                cpu_file_return[cpu_objects[index_cpu]] = None
-            print(cpu_file_return)
-            json.dump(cpu_file_return, cpu_file, indent=4)
-        return 0
+
     with open(cpu_file_name, 'r') as cpu_file:
         cpu_file_index = json.load(cpu_file)
-        index_list = cpu_instance.create_index(cpu_file_index)
+        object_monitor.create_index(cpu_file_index)
 
+def get_metrics():
+    # считываем с файла!
+    prototype_list = {
+        '12': {
+            'core.user.time': 1,
+            'core.system.time': 2,
+            'core.irq.time': 3,
+            'core.softirq.time': 1,
+            'core.idle.time': 1,
+            'core.iowait': 2,
+            'core.load': 3
+        },
+        '13': {
+            'core.user.time': 1,
+            'core.system.time': 2,
+            'core.irq.time': 3,
+            'core.softirq.time': 1,
+            'core.idle.time': 1,
+            'core.iowait': 2,
+            'core.load': 3
+        },
+        '16': {
+            'core.user.time': 1,
+            'core.system.time': 2
+        },
+    }
+    value_dict = {}
+    for item_id, metrics in prototype_list.items():
+        for metric_id, time_value in metrics.items():
+            if time_value not in value_dict:
+                value_dict[time_value] = []
+            # Добавляем пару (внешний ключ, внутренний ключ) в список
+            value_dict[time_value].append((item_id, metric_id))
+    return value_dict
 
+def main():
+    cpu_prime = CPUsMonitor()
+    create_index_for_cpu(cpu_prime)
 
+    cpu_update_thread = threading.Thread(target=periodic_update, args=(cpu_prime, 1))
+    cpu_update_thread.start()
 
+    prototype_list_cpu = get_metrics()
+    try:
+        print(prototype_list_cpu)
+        while True:
+            time_start = time.time()
+            time_index = int(time_start)
+            print(time_index)
+            params = []
+            for time_value, data in prototype_list_cpu.items():
+                if time_index % time_value == 0:
+                    for item_id, metric_id in data:
+                        aaa = cpu_prime.get_item(item_id, metric_id)
+                        params.append(aaa)
+                        print(time.time(), item_id, metric_id, aaa)
+            print(f"!! СОБРАНО МЕТРИК {len(params)}")
+            print("___________________")
+            time_gets = time.time() - time_start
+            time.sleep(1 - time_gets)
 
+    except Exception as e:
+        print(e)
+    finally:
+        stop_event.set()
+        cpu_update_thread.join()
+        print("Поток завершен.")
 
-
-
-
-
-cpu_start()
+if __name__ == "__main__":
+    main()
