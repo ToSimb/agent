@@ -1,29 +1,68 @@
 import subprocess
-import uuid
-
 
 class GPUsMonitor:
     def __init__(self):
+        """
+        Инициализация экземпляра класса.
+
+        Атрибуты:
+            gpus_name (dict): Словарь, где ключ - uuid gpu,
+                            а значением - название модели gpu.
+                            Пример: {'GPU-70cfb510-d7fe-14a2-9b28-ba4943bc96f2': 'NVIDIA GeForce RTX 2060 SUPER'}
+            gpus (dict): Словарь, где ключ  - uuid gpu,
+                            а значением - объект класса GPU.
+                            Пример: {'GPU-70cfb510-d7fe-14a2-9b28-ba4943bc96f2': <__main__.GPU object at 0x74fefb6cea30>}
+            gpus_info (dict): Словарь, где ключ -- uuid gpu,
+                               а значением - строка, представляющая информацию о его месте в системе.
+                               Пример: {'GPU-70cfb510-d7fe-14a2-9b28-ba4943bc96f2': 'gpu:0'}
+            item_index: Словарь, где ключ - это будущий item_id из схемы,
+                        а значением - ссылка на объект класса GPU.
+                        Пример: {'122': <__main__.GPU object at 0x74fefb6cea30>}
+            system (str): Название операционной системы (например, 'Linux').
+        """
+        self.gpus_name = {}
         self.gpus = {}
+        self.gpus_info = {}
+        self.item_index = {}
+        # не работает с --format=json
         result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"],
+            ["nvidia-smi", "--query-gpu=index,name,uuid", "--format=csv,noheader"],
             capture_output=True, text=True, check=True
         )
-        for uuid in result.stdout.split("\n"):
-            if uuid:
-                self.gpus[uuid.strip()] = uuid
-                self.gpus[uuid] = GPU(uuid)
+        lines = result.stdout.splitlines()
+        for line in lines:
+            index, name, uuid_gpu = line.split(',')
+            name = name.strip()
+            uuid_gpu = uuid_gpu.strip()
+            self.gpus_name[uuid_gpu] = name
+            self.gpus[uuid_gpu] = GPU(uuid_gpu)
+            self.gpus_info[uuid_gpu] = f"gpu:{index}"
 
-    def validate_value_int(self, value):
-        try:
-            return int(value)
-        except:
-            return None
+    def get_objects_description(self):
+        return self.gpus_info
 
-    def validate_value_float(self, value):
-        try:
-            return float(value)
-        except:
+    def create_index(self, gpu_dict):
+        """
+        Пример gpu_dict:
+            {
+                "gpu:0": 121,
+            }
+        """
+        for index in gpu_dict:
+            if gpu_dict[index] is not None:
+                for key, value in self.gpus_info.items():
+                    if value == index:
+                        self.item_index[str(gpu_dict[index])] = self.gpus.get(key, None)
+                        break
+            else:
+                print(f'Для индекса {index} нет значения')
+        print("Индексы для GPU обновлены")
+
+    @staticmethod
+    def __validate_value_int(value):
+        if value.isdigit():
+            return value
+        else:
             return None
 
     def update(self):
@@ -34,53 +73,59 @@ class GPUsMonitor:
                  "--format=csv,noheader,nounits"],
                 capture_output=True, text=True, check=True
             )
-            lines = result.stdout.strip().split("\n")
+            lines = result.stdout.splitlines()
         except:
             print("No GPUs found")
-            return None
+            return False
 
         for line in lines:
-            values = line.split(", ")
+            values = line.split(",")
+            for index in range(len(values)):
+                values[index] = values[index].strip()
             if values[1] in self.gpus:
                 result_line = {
-                    "gpu.index": self.validate_value_int(values[0]),
+                    "gpu.index": self.__validate_value_int(values[0]),
                     "gpu.uuid": values[1],
                     "gpu.name": values[2],
-                    "gpu.clocks.current.graphics": self.validate_value_int(values[3]),
-                    "gpu.clocks.current.memory": self.validate_value_int(values[4]),
-                    "gpu.utilization.gpu": self.validate_value_int(values[5]),
-                    "gpu.utilization.memory": self.validate_value_int(values[6]),
-                    "gpu.memory.used": self.validate_value_int(values[7]),
-                    "gpu.fan.speed": self.validate_value_int(values[8]),
-                    "gpu.temperature.gpu": self.validate_value_int(values[9])
+                    "gpu.clocks.current.graphics": self.__validate_value_int(values[3]),
+                    "gpu.clocks.current.memory": self.__validate_value_int(values[4]),
+                    "gpu.utilization.gpu": self.__validate_value_int(values[5]),
+                    "gpu.utilization.memory": self.__validate_value_int(values[6]),
+                    "gpu.memory.used": self.__validate_value_int(values[7]),
+                    "gpu.fan.speed": self.__validate_value_int(values[8]),
+                    "gpu.temperature.gpu": self.__validate_value_int(values[9])
                 }
-                self.gpus.get(values[1]).update_params(result_line)
+                self.gpus.get(values[1]).update(result_line)
             else:
                 print(f"uuid {values[1]} - не найден в списке объектов")
+        return True
 
     def get_all(self):
-        for uuid in self.gpus.values():
-            aaa = uuid.get_params_all()
+        return_list = []
+        for index_gpu in self.gpus.keys():
+            result = self.gpus[index_gpu].get_params_all()
+            return_list.append({index_gpu: result})
+        return return_list
 
-    def get_item_all(self, uuid: str):
+    def get_item_and_metric(self, item_id: str, metric_id:str):
         try:
-            return self.gpus.get(uuid).get_params_all()
+            return self.item_index.get(item_id).get_metric(metric_id)
         except:
+            print(f"ошибка - {item_id}: {metric_id}")
             return None
 
-    def get_item(self, uuid: str, metric_id:str):
+    def get_item_origin(self, uuid_gpu: str, metric_id:str):
         try:
-            return self.gpus.get(uuid).get_metric(metric_id)
+            return self.gpus.get(uuid_gpu).get_metric(metric_id)
         except:
-            print(f"ошибка - {uuid}: {metric_id}")
+            print(f"ошибка - {uuid_gpu}: {metric_id}")
             return None
-
 
 class GPU:
-    def __init__(self, uuid: str):
+    def __init__(self, uuid_gpu: str):
         self.params = {
             "gpu.index": None,
-            "gpu.uuid": uuid,
+            "gpu.uuid": uuid_gpu,
             "gpu.name": None,
             "gpu.clocks.current.graphics": None,
             "gpu.clocks.current.memory": None,
@@ -91,7 +136,7 @@ class GPU:
             "gpu.temperature.gpu": None
         }
 
-    def update_params(self, params_new: dict):
+    def update(self, params_new: dict):
         self.params.update(params_new)
 
     def get_params_all(self):
