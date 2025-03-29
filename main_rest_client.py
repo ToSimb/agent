@@ -4,7 +4,7 @@ import time
 import sys
 import signal
 
-from logger.logger import logger_rest_client
+from logger.logger_rest_client import logger_rest_client
 from config import (DEBUG_MODE,
                     REUPLOAD_AGENT_SCHEME,
                     CHECK_SURVEY_PERIOD,
