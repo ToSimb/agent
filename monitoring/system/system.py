@@ -1,9 +1,15 @@
 import time
 import psutil
 
-
 class SystemMonitor:
     def __init__(self):
+        self.system_name = {
+            '0': "chassis"
+        }
+        self.system_info = {
+            "0": "chassis:0"
+        }
+        self.item_index = None
         self.params = {
             "chassis.uptime": None,
             "chassis.core.count": None,
@@ -22,19 +28,10 @@ class SystemMonitor:
         uptime = psutil.boot_time()
         vm = psutil.virtual_memory()
         swap = psutil.swap_memory()
-        load_avg = psutil.cpu_percent(interval=0.1)
+        load_avg = psutil.cpu_percent(interval=0.2)
         core_count = psutil.cpu_count(logical=False)
         logic_count = psutil.cpu_count(logical=True)
         cpu_stats = psutil.cpu_stats()
-
-        # через ASUNCIO
-        # uptime = await asyncio.to_thread(psutil.boot_time)
-        # vm = await asyncio.to_thread(psutil.virtual_memory)
-        # swap = await asyncio.to_thread(psutil.swap_memory)
-        # load_avg = await asyncio.to_thread(psutil.cpu_percent, interval=0.1)
-        # core_count = await asyncio.to_thread(psutil.cpu_count, logical=False)
-        # logic_count = await asyncio.to_thread(psutil.cpu_count, logical=True)
-        # cpu_stats = await asyncio.to_thread(psutil.cpu_stats)
 
         result = {
             "chassis.uptime": int(time.time() - uptime),
@@ -51,8 +48,36 @@ class SystemMonitor:
         }
         self.params.update(result)
 
-    def get_all(self):
-        return self.params
+    def get_objects_description(self):
+        return self.system_info
 
-    def get_metrics(self, metric_id: str):
-        return self.params.get(metric_id, None)
+    def create_index(self, system_dict):
+        for index in system_dict:
+            if system_dict[index] is not None:
+                for key, value in self.system_info.items():
+                    if value == index:
+                        self.item_index = str(system_dict[index])
+                        break
+                else:
+                    print(f'Для индекса {index} нет значения')
+        print("Индексы для SYSTEM обновлены")
+
+    def get_all(self):
+        return_list = []
+        return_list.append(self.params)
+        return return_list
+
+    def get_item_and_metric(self, item_id: str, metric_id: str):
+        try:
+            if item_id == self.item_index:
+                if metric_id in self.params:
+                    result = self.params[metric_id]
+                    self.params[metric_id] = None
+                    return result
+                else:
+                    raise KeyError(f"Ключ не найден в словаре.")
+            else:
+                raise KeyError(f"Не найден такой item_id")
+        except Exception as e:
+            print(f"Ошибка в запросе item - {item_id}, метрики {metric_id} - {e}")
+            return None
