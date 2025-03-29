@@ -86,14 +86,24 @@ class CPUsMonitor:
         return self.cores_info
 
     def create_index(self, cpu_dict):
+        """
+        Пример cpu_dict:
+            {
+                "cpu:0:0": 12,
+                "cpu:0:1": 13,
+                "cpu:0:2": 14,
+                "cpu:0:3": null
+            }
+        """
+        print(cpu_dict)
         for index in cpu_dict:
             if cpu_dict[index] is not None:
                 for key, value in self.cores_info.items():
                     if value == index:
                         self.item_index[str(cpu_dict[index])] = self.cores.get(key, None)
                         break
-            else:
-                print(f'Для индекса {index} нет значения')
+                else:
+                    print(f'Для индекса {index} нет значения')
         print("Индексы для CPU обновлены")
 
     def update(self):
