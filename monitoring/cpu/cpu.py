@@ -9,20 +9,25 @@ class CPUsMonitor:
         Инициализация экземпляра класса.
 
         Атрибуты:
-            cpus (dict): Словарь, где ключ - физический идентификатор процессора (сокета),
-                          а значением - название модели процессора.
-                          Пример: {'0': 'AMD Ryzen 5 3600X 6-Core Processor',
+            cpus_name (dict): Словарь, где ключ - физический идентификатор процессора (сокета),
+                            а значением - название модели процессора.
+                            Пример: {'0': 'AMD Ryzen 5 3600X 6-Core Processor',
                                     '1': 'AMD Ryzen 5 3600X 6-Core Processor'}
             cores (dict): Словарь, где ключ - идентификатор процессора (логического потока),
-                           а значением - объект класса Core, представляющий ядро процессора.
-                           Пример: {'0': <__main__.Core object at 0x79853a7bdee0>,
+                            а значением - объект класса Core, представляющий ядро процессора.
+                            Пример: {'0': <__main__.Core object at 0x79853a7bdee0>,
                                      '1': <__main__.Core object at 0x79853a654d60>}
             cores_info (dict): Словарь, где ключ - идентификатор процессора (логического потока),
                                а значением - строка, представляющая информацию о его месте в системе.
                                Пример: {'0': 'cpu:0:0', '1': 'cpu:0:1', ...}
+            item_index: Словарь, где ключ - это будущий item_id из схемы,
+                        а значением - объект класса Core.
+                        (по факту мы делаем новые ссылки на объекты)
+                        Пример: {'12': <__main__.Core object at 0x79853a7bdee0>,
+                                '13': <__main__.Core object at 0x79853a654d60>}
             system (str): Название операционной системы (например, 'Linux').
         """
-        self.cpus = {}
+        self.cpus_name = {}
         self.cores = {}
         self.cores_info = {}
         self.item_index = {}
@@ -30,8 +35,8 @@ class CPUsMonitor:
         if self.system == 'Linux':
             cores_infor = self.__get_linux_info()
             for core_line in cores_infor:
-                if core_line["physical_id"] not in self.cpus:
-                    self.cpus[core_line["physical_id"]] = core_line["model_name"]
+                if core_line["physical_id"] not in self.cpus_name:
+                    self.cpus_name[core_line["physical_id"]] = core_line["model_name"]
                 self.cores[core_line['processor_id']] = Core()
                 self.cores_info[core_line['processor_id']] = f"cpu:{core_line['physical_id']}:{core_line['physical_core_id']}"
 
@@ -77,7 +82,7 @@ class CPUsMonitor:
                 processor_info.append(current_processor)
         return processor_info
 
-    def get_objects_describtion(self):
+    def get_objects_description(self):
         return self.cores_info
 
     def create_index(self, cpu_dict):
@@ -150,7 +155,7 @@ class CPUsMonitor:
             return_list.append({index_cores: result})
         return return_list
 
-    def get_item(self, item_id: str, metric_id: str):
+    def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
