@@ -4,6 +4,7 @@ from monitoring.cpu.cpu import CPUsMonitor
 from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
+from monitoring.lvol.lvol import LvolsMonitor
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -26,6 +27,7 @@ def cpu_start():
     logger_monitoring.info(" * " * 10)
 
     aa = cpu_prime.get_all()
+    print("CPU:")
     for aaa in aa:
         print(aaa)
 
@@ -46,6 +48,7 @@ def gpu_start():
     logger_monitoring.info(f'GPU get object time:       {time_gpu_get_obj}')
     logger_monitoring.info(" * " * 10)
     aa = gpu_prime.get_all()
+    print("GPU:")
     for aaa in aa:
         print(aaa)
 
@@ -66,7 +69,29 @@ def system_start():
     logger_monitoring.info(f'SYSTEM get object time:       {time_system_get_obj}')
     logger_monitoring.info(" * " * 10)
     aa = system_prime.get_all()
+    print("SYSTEM:")
     print(aa)
+
+def lvol_start():
+    lvol_prime, time_lvol_init = measure_execution_time(LvolsMonitor)
+    _, time_lvol_update = measure_execution_time(lvol_prime.update)
+    lvol_objects_descr, time_lvol_get_obj = measure_execution_time(lvol_prime.get_objects_description)
+
+    lvol_file_name = 'monitoring/settings_file/lvol_raw.txt'
+    if save_file(lvol_file_name, lvol_objects_descr):
+        logger_monitoring.info(f"Файл {lvol_file_name} создан, требуется его заполнение!")
+    else:
+        logger_monitoring.info(f"Уже имеется файл: {lvol_file_name}")
+
+    logger_monitoring.info(" * " * 10)
+    logger_monitoring.info(f'LVOL initialization time:   {time_lvol_init}')
+    logger_monitoring.info(f'LVOL update time:           {time_lvol_update}')
+    logger_monitoring.info(f'LVOL get object time:       {time_lvol_get_obj}')
+    logger_monitoring.info(" * " * 10)
+    aa = lvol_prime.get_all()
+    print("LVOL:")
+    for aaa in aa:
+        print(aaa)
 
 def eth_port_start():
     eth_port_prime, time_eth_port_init = measure_execution_time(EthPortMonitor)
@@ -85,6 +110,7 @@ def eth_port_start():
     logger_monitoring.info(f'ETH_PORT get object time:       {time_eth_port_get_obj}')
     logger_monitoring.info(" * " * 10)
     aa = eth_port_prime.get_all()
+    print("ETH_PORT:")
     for aaa in aa:
         print(aaa)
 
@@ -95,6 +121,8 @@ def main():
     gpu_start()
     logger_monitoring.info("- - -"*10)
     system_start()
+    logger_monitoring.info("- - -"*10)
+    lvol_start()
     logger_monitoring.info("- - -"*10)
     eth_port_start()
     logger_monitoring.info("- - -"*10)
