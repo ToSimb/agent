@@ -5,6 +5,7 @@ from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
+from monitoring.freon_a.freon_a import FreonA
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -114,17 +115,41 @@ def eth_port_start():
     for aaa in aa:
         print(aaa)
 
+def f_a_start():
+    f_a_prime, time_f_a_init = measure_execution_time(FreonA, "monitoring/freon_a/freon_dict.txt")
+    _, time_f_a_update = measure_execution_time(f_a_prime.update)
+    f_a_objects_descr, time_f_a_get_obj = measure_execution_time(f_a_prime.get_objects_description)
+    fa, time_f_a_get_params = measure_execution_time(f_a_prime.get_all)
+
+
+    f_a_file_name = 'monitoring/settings_file/f_a_raw.txt'
+    if save_file(f_a_file_name, f_a_objects_descr):
+        logger_monitoring.info(f"Файл {f_a_file_name} создан, требуется его заполнение!")
+    else:
+        logger_monitoring.info(f"Уже имеется файл: {f_a_file_name}")
+
+    logger_monitoring.info(" * " * 10)
+    logger_monitoring.info(f'F-A initialization time:   {time_f_a_init}')
+    logger_monitoring.info(f'F-A update time:           {time_f_a_update}')
+    logger_monitoring.info(f'F-A get object time:       {time_f_a_get_obj}')
+    logger_monitoring.info(f'F-A get params time:       {time_f_a_get_params}')
+    logger_monitoring.info(" * " * 10)
+    print("F_A:")
+    print(len(fa))
+
 def main():
-    logger_monitoring.info("- - -"*10)
-    cpu_start()
-    logger_monitoring.info("- - -"*10)
-    gpu_start()
-    logger_monitoring.info("- - -"*10)
-    system_start()
-    logger_monitoring.info("- - -"*10)
-    lvol_start()
-    logger_monitoring.info("- - -"*10)
-    eth_port_start()
+    # logger_monitoring.info("- - -"*10)
+    # cpu_start()
+    # logger_monitoring.info("- - -"*10)
+    # gpu_start()
+    # logger_monitoring.info("- - -"*10)
+    # system_start()
+    # logger_monitoring.info("- - -"*10)
+    # lvol_start()
+    # logger_monitoring.info("- - -"*10)
+    # eth_port_start()
+    # logger_monitoring.info("- - -"*10)
+    f_a_start()
     logger_monitoring.info("- - -"*10)
 
 
