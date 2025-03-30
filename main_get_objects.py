@@ -6,6 +6,7 @@ from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.freon_a.freon_a import FreonA
+from monitoring.freon_b.freon_b import FreonB
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -137,6 +138,28 @@ def f_a_start():
     print("F_A:")
     print(len(fa))
 
+def f_b_start():
+    f_b_prime, time_f_b_init = measure_execution_time(FreonB, "monitoring/freon_b/freon_dict.txt")
+    _, time_f_b_update = measure_execution_time(f_b_prime.update)
+    f_b_objects_descr, time_f_b_get_obj = measure_execution_time(f_b_prime.get_objects_description)
+    fb, time_f_b_get_params = measure_execution_time(f_b_prime.get_all)
+
+
+    f_b_file_name = 'monitoring/settings_file/f_b_raw.txt'
+    if save_file(f_b_file_name, f_b_objects_descr):
+        logger_monitoring.info(f"Файл {f_b_file_name} создан, требуется его заполнение!")
+    else:
+        logger_monitoring.info(f"Уже имеется файл: {f_b_file_name}")
+
+    logger_monitoring.info(" * " * 10)
+    logger_monitoring.info(f'F-B initialization time:   {time_f_b_init}')
+    logger_monitoring.info(f'F-B update time:           {time_f_b_update}')
+    logger_monitoring.info(f'F-B get object time:       {time_f_b_get_obj}')
+    logger_monitoring.info(f'F-B get params time:       {time_f_b_get_params}')
+    logger_monitoring.info(" * " * 10)
+    print("F_B:")
+    print(len(fb))
+
 def main():
     # logger_monitoring.info("- - -"*10)
     # cpu_start()
@@ -149,7 +172,9 @@ def main():
     # logger_monitoring.info("- - -"*10)
     # eth_port_start()
     # logger_monitoring.info("- - -"*10)
-    f_a_start()
+    # f_a_start()
+    # logger_monitoring.info("- - -"*10)
+    f_b_start()
     logger_monitoring.info("- - -"*10)
 
 
