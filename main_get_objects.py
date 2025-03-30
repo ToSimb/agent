@@ -3,6 +3,7 @@ from monitoring.service import (measure_execution_time,
 from monitoring.cpu.cpu import CPUsMonitor
 from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.system.system import SystemMonitor
+from monitoring.eth_port.eth_port import EthPortMonitor
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -45,7 +46,8 @@ def gpu_start():
     logger_monitoring.info(f'GPU get object time:       {time_gpu_get_obj}')
     logger_monitoring.info(" * " * 10)
     aa = gpu_prime.get_all()
-    print(aa)
+    for aaa in aa:
+        print(aaa)
 
 def system_start():
     system_prime, time_system_init = measure_execution_time(SystemMonitor)
@@ -66,6 +68,26 @@ def system_start():
     aa = system_prime.get_all()
     print(aa)
 
+def eth_port_start():
+    eth_port_prime, time_eth_port_init = measure_execution_time(EthPortMonitor)
+    _, time_eth_port_update = measure_execution_time(eth_port_prime.update)
+    eth_port_objects_descr, time_eth_port_get_obj = measure_execution_time(eth_port_prime.get_objects_description)
+
+    eth_port_file_name = 'monitoring/settings_file/eth_port_raw.txt'
+    if save_file(eth_port_file_name, eth_port_objects_descr):
+        logger_monitoring.info(f"Файл {eth_port_file_name} создан, требуется его заполнение!")
+    else:
+        logger_monitoring.info(f"Уже имеется файл: {eth_port_file_name}")
+
+    logger_monitoring.info(" * " * 10)
+    logger_monitoring.info(f'ETH_PORT initialization time:   {time_eth_port_init}')
+    logger_monitoring.info(f'ETH_PORT update time:           {time_eth_port_update}')
+    logger_monitoring.info(f'ETH_PORT get object time:       {time_eth_port_get_obj}')
+    logger_monitoring.info(" * " * 10)
+    aa = eth_port_prime.get_all()
+    for aaa in aa:
+        print(aaa)
+
 def main():
     logger_monitoring.info("- - -"*10)
     cpu_start()
@@ -74,6 +96,9 @@ def main():
     logger_monitoring.info("- - -"*10)
     system_start()
     logger_monitoring.info("- - -"*10)
+    eth_port_start()
+    logger_monitoring.info("- - -"*10)
+
 
 if __name__ == "__main__":
     main()
