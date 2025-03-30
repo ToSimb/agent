@@ -18,7 +18,6 @@ class GPUsMonitor:
             item_index: Словарь, где ключ - это будущий item_id из схемы,
                         а значением - ссылка на объект класса GPU.
                         Пример: {'122': <__main__.GPU object at 0x74fefb6cea30>}
-            system (str): Название операционной системы (например, 'Linux').
         """
         self.gpus_name = {}
         self.gpus = {}
