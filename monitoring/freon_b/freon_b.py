@@ -175,9 +175,9 @@ class FreonB:
 class Vu_fb:
     def __init__(self, ip_address: str):
         self.params = {
-            "name": ip_address,
-            "taskId": None,
-            "state": None,
+            "asic.name": ip_address,
+            "asic.taskId": None,
+            "asic.state": None,
         }
         self.boards = {}
         for board_index in range(COUNT_BOARDS):
@@ -187,10 +187,10 @@ class Vu_fb:
         return self.boards
 
     def update(self, line):
-        self.params["taskId"] = line["taskId"]
-        self.params["state"] = line["state"]
+        self.params["asic.taskId"] = line["taskId"]
+        self.params["asic.state"] = line["state"]
         state_disconnect = False
-        if self.params["state"] == "disconnected":
+        if self.params["asic.state"] == "disconnected":
             state_disconnect = True
         for board_index in range(COUNT_BOARDS):
             self.boards[board_index].update(line["stat"]["units"][board_index], state_disconnect)
@@ -217,9 +217,9 @@ class Board_fb:
         self.units_U = {}
         self.units_I = {}
         self.params = {
-            "unit.state": None,
-            "unit.P": None,
-            "unit.maxT" : None
+            "asic.state": None,
+            "asic.P": None,
+            "asic.maxT": None
         }
         for index in range(COUNT_SENSOR_T):
             self.units_T[index] = Unit_T()
@@ -250,9 +250,9 @@ class Board_fb:
         if state_disconnect:
             i_unit_state = "disconnected"
         line_data = {
-            "unit.state": i_unit_state,
-            "unit.P": line.get("P"),
-            "unit.maxT": line.get("maxT"),
+            "asic.state": i_unit_state,
+            "asic.P": line.get("P"),
+            "asic.maxT": line.get("maxT"),
         }
         return line_data, line.get("T"), line.get("U"), line.get("I")
 
@@ -275,11 +275,11 @@ class Board_fb:
 class Unit_T:
     def __init__(self):
         self.params = {
-            "unit.T": None,
+            "asic.T": None,
         }
 
     def update(self, params):
-        self.params["unit.T"] = params
+        self.params["asic.T"] = params
 
     def get_params_all(self):
         return self.params
@@ -300,11 +300,11 @@ class Unit_T:
 class Unit_U:
     def __init__(self):
         self.params = {
-            "unit.U": None,
+            "asic.U": None,
         }
 
     def update(self, params):
-        self.params["unit.U"] = params
+        self.params["asic.U"] = params
 
     def get_params_all(self):
         return self.params
@@ -325,11 +325,11 @@ class Unit_U:
 class Unit_I:
     def __init__(self):
         self.params = {
-            "unit.I": None,
+            "asic.I": None,
         }
 
     def update(self, params):
-        self.params["unit.I"] = params
+        self.params["asic.I"] = params
 
     def get_params_all(self):
         return self.params

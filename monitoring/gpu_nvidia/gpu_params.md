@@ -6,16 +6,16 @@
 
 | Параметр                      | Описание                                       | Тип данных | Единицы измерения |
 |-------------------------------|------------------------------------------------|------------|-------------------|
-| `gpu.index`                   | Индекс GPU в системе.                          | int        | -                 |
-| `gpu.uuid`                    | Уникальный идентификатор GPU (UUID).           | str        | -                 |
-| `gpu.name`                    | Название GPU (модель графического процессора). | str        | -                 |
-| `gpu.clocks.current.graphics` | Текущая частота графических ядер.              | int        | МГц               |
-| `gpu.clocks.current.memory`   | Текущая частота памяти.                        | int        | МГц               |
-| `gpu.utilization.gpu`         | Уровень загрузки GPU.                          | int        | %                 |
-| `gpu.utilization.memory`      | Уровень загрузки видеопамяти.                  | int        | %                 |
-| `gpu.memory.used`             | Объем используемой видеопамяти.                | int        | МБ                |
-| `gpu.fan.speed`               | Скорость вращения вентилятора.                 | int        | %                 |
-| `gpu.temperature.gpu`         | Температура GPU.                               | int        | °C                |
+| `gpu.index`                   | Индекс GPU в системе.                          | integer    | -                 |
+| `gpu.uuid`                    | Уникальный идентификатор GPU (UUID).           | string     | -                 |
+| `gpu.name`                    | Название GPU (модель графического процессора). | string     | -                 |
+| `gpu.clocks.current.graphics` | Текущая частота графических ядер.              | integer    | МГц               |
+| `gpu.clocks.current.memory`   | Текущая частота памяти.                        | integer    | МГц               |
+| `gpu.utilization.gpu`         | Уровень загрузки GPU.                          | integer    | %                 |
+| `gpu.utilization.memory`      | Уровень загрузки видеопамяти.                  | integer    | %                 |
+| `gpu.memory.used`             | Объем используемой видеопамяти.                | integer    | МБ                |
+| `gpu.fan.speed`               | Скорость вращения вентилятора.                 | integer    | %                 |
+| `gpu.temperature.gpu`         | Температура GPU.                               | integer    | °C                |
 
 ## Примечание
 

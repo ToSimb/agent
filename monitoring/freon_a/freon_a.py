@@ -12,7 +12,7 @@ class FreonA:
 
         Атрибуты:
             vus (dict): Словарь, где ключ - ip-address платы ++ может быть дополнение,
-                            а значением - объект класса Core, представляющий ядро процессора.
+                            а значением - объект класса Board_f_a(Unit_T,...).
                             Пример: {'192.168.86.194': <__main__.Board_f_a object at 0x79c9c8b41100>,
                                     '192.168.86.188': <__main__.Board_f_a object at 0x79c9c8b18700>, ...,
 
@@ -26,7 +26,7 @@ class FreonA:
 
                                         'agent_connection': 'fa:agent_connection'}
             item_index: Словарь, где ключ - это будущий item_id из схемы,
-                        а значением - объект класса Core.
+                        а значением - объект класса Board_f_a(Unit_T,...).
                         (по факту мы делаем новые ссылки на объекты)
                             Пример: {'1111': <__main__.Board_f_a object at 0x79c9c8b41100>,
                                      '1112': <__main__.Board_f_a object at 0x79c9c8b18700>, ...
@@ -34,7 +34,6 @@ class FreonA:
                                      '1121':
 
                                      '1110': self.agent_connection }
-            system (str): Название операционной системы (например, 'Linux').
         """
         self.vus = {}
         self.vus_info = {}
@@ -46,7 +45,7 @@ class FreonA:
             self.conn = True
             for i in fa["rows"]:
                 if i["name"]:
-                    self.vus[i["name"]] = Board_f_a(i["name"])
+                    self.vus[i["name"]] = Board_fa(i["name"])
                     units_T, units_U, units_I = self.vus[i["name"]].get_all_obj()
                     for index_T in units_T.keys():
                         self.vus[f"{i['name']}:T:{index_T}"] = units_T[index_T]
@@ -139,12 +138,12 @@ class FreonA:
 
     def get_all(self):
         """
-            Возращает все параметры, кроме agent_connection
+            Возвращает все параметры, кроме agent_connection
         """
         return_list = []
         for vu in self.vus.keys():
             result = self.vus[vu].get_params_all()
-            return_list.append({vu :result})
+            return_list.append({vu: result})
         return return_list
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
@@ -157,16 +156,17 @@ class FreonA:
             print(f"ошибка - {item_id}: {metric_id} - {e}")
             return None
 
-class Board_f_a:
+
+class Board_fa:
     def __init__(self, ip_address: str):
         self.units_T = {}
         self.units_U = {}
         self.units_I = {}
         self.params = {
-            "name": ip_address,
-            "taskId": None,
-            "state": None,
-            "unit.P": None,
+            "asic.name": ip_address,
+            "asic.taskId": None,
+            "asic.state": None,
+            "asic.P": None,
         }
         for index in range(6):
             self.units_T[index] = Unit_T()
@@ -177,7 +177,7 @@ class Board_f_a:
         return self.units_T, self.units_U, self.units_I
 
     def update(self, line:dict):
-        params, units_T_data, units_U_data, units_I_data = self.parse_response_data_FA(line)
+        params, units_T_data, units_U_data, units_I_data = self.__parse_response_data_FA(line)
         if units_T_data:
             for index in range(len(units_T_data)):
                 self.units_T[index].update(units_T_data[index])
@@ -189,19 +189,20 @@ class Board_f_a:
                 self.units_I[index].update(units_I_data[index])
         self.params.update(params)
 
-    def parse_response_data_FA(self, line:dict):
+    @staticmethod
+    def __parse_response_data_FA(self, line: dict):
         i_stat = line.get("stat")
         line_data = {
-            "name": line.get("name"),
-            "taskId": line.get("taskId"),
-            "state": line.get("state"),
+            "asic.name": line.get("name"),
+            "asic.taskId": line.get("taskId"),
+            "asic.state": line.get("state"),
         }
         units_T_data = None
         units_U_data = None
         units_I_data = None
         if i_stat != {}:
             stat_data = {
-                "unit.P": i_stat.get("units")[0].get("P"),
+                "asic.P": i_stat.get("units")[0].get("P"),
             }
             units_T_data = i_stat.get("units")[0].get("T")
             units_U_data = i_stat.get("units")[0].get("U")
@@ -228,11 +229,11 @@ class Board_f_a:
 class Unit_T:
     def __init__(self):
         self.params = {
-            "unit.T": None,
+            "asic.T": None,
         }
 
     def update(self, params):
-        self.params["unit.T"] = params
+        self.params["asic.T"] = params
 
     def get_params_all(self):
         return self.params
@@ -253,11 +254,11 @@ class Unit_T:
 class Unit_U:
     def __init__(self):
         self.params = {
-            "unit.U": None,
+            "asic.U": None,
         }
 
     def update(self, params):
-        self.params["unit.U"] = params
+        self.params["asic.U"] = params
 
     def get_params_all(self):
         return self.params
@@ -278,11 +279,11 @@ class Unit_U:
 class Unit_I:
     def __init__(self):
         self.params = {
-            "unit.I": None,
+            "asic.I": None,
         }
 
     def update(self, params):
-        self.params["unit.I"] = params
+        self.params["asic.I"] = params
 
     def get_params_all(self):
         return self.params

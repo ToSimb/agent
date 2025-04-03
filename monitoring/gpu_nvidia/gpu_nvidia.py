@@ -6,9 +6,6 @@ class GPUsMonitor:
         Инициализация экземпляра класса.
 
         Атрибуты:
-            gpus_name (dict): Словарь, где ключ - uuid gpu,
-                            а значением - название модели gpu.
-                            Пример: {'GPU-70cfb510-d7fe-14a2-9b28-ba4943bc96f2': 'NVIDIA GeForce RTX 2060 SUPER'}
             gpus (dict): Словарь, где ключ  - uuid gpu,
                             а значением - объект класса GPU.
                             Пример: {'GPU-70cfb510-d7fe-14a2-9b28-ba4943bc96f2': <__main__.GPU object at 0x74fefb6cea30>}
@@ -19,7 +16,6 @@ class GPUsMonitor:
                         а значением - ссылка на объект класса GPU.
                         Пример: {'122': <__main__.GPU object at 0x74fefb6cea30>}
         """
-        self.gpus_name = {}
         self.gpus = {}
         self.gpus_info = {}
         self.item_index = {}
@@ -31,9 +27,7 @@ class GPUsMonitor:
         lines = result.stdout.splitlines()
         for line in lines:
             index, name, uuid_gpu = line.split(',')
-            name = name.strip()
             uuid_gpu = uuid_gpu.strip()
-            self.gpus_name[uuid_gpu] = name
             self.gpus[uuid_gpu] = GPU(uuid_gpu)
             self.gpus_info[uuid_gpu] = f"gpu:{index}"
 

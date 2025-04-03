@@ -8,7 +8,7 @@ from config import (MAX_NUMBER_OF_PF,
                     RETENTION_TIME_S)
 
 
-from logger.logger import logger_rest_client
+from logger.logger_rest_client import logger_rest_client
 
 def open_file(file_path):
     try:

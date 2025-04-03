@@ -14,10 +14,6 @@ class DisksMonitor:
         self.wmic_available = shutil.which("wmic") is not None
 
         try:
-            # Нет пока что смысла использовать, так как если smartctl находит только те диски, которые может опросить!!!
-            # result1 = subprocess.run(['lsblk', '-o', 'NAME,TYPE,SIZE'], capture_output=True, text=True)
-            # lines = result1.stdout.strip().split('\n')
-
             command = ['smartctl', '--scan']
             encoding = locale.getpreferredencoding()
             result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding).strip().split("\n")
@@ -207,8 +203,3 @@ class Disk:
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
-
-a = DisksMonitor()
-a.update()
-print("- -"*30)
-a.get_all()

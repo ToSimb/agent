@@ -22,12 +22,25 @@ def periodic_update(object_monitor, interval):
 def main():
     try:
         CONN = create_connection()
-        cpu_prime = CPUsMonitor()
-        cpu_file_name = 'monitoring/settings_file/cpu_final.txt'
-        create_index_for_any(cpu_file_name, cpu_prime)
+        monitors = {
+            'core': CPUsMonitor(),
+            # 'ram': RAMMonitor(),
+            # 'disk': DiskMonitor(),
+            # и т.д.
+        }
+        # cpu_prime = CPUsMonitor()
+        # cpu_file_name = 'monitoring/settings_file/cpu_final.txt'
+        # create_index_for_any(cpu_file_name, cpu_prime)
 
-        cpu_update_thread = threading.Thread(target=periodic_update, args=(cpu_prime, 1))
-        cpu_update_thread.start()
+        # cpu_update_thread = threading.Thread(target=periodic_update, args=(cpu_prime, 1))
+        # cpu_update_thread.start()
+
+        threads = []
+        for prefix, monitor in monitors.items():
+            create_index_for_any(f'monitoring/settings_file/{prefix}_final.txt', monitor)
+            t = threading.Thread(target=periodic_update, args=(monitor, 1))
+            t.start()
+            threads.append(t)
 
         prototype_list_cpu = get_metrics_test()
 
@@ -41,15 +54,21 @@ def main():
                 if time_value > 0:
                     if time_index % time_value == 0:
                         for item_id, metric_id in data:
-                            pf = cpu_prime.get_item_and_metric(item_id, metric_id)
-                            if pf is not None:
-                                params.append(
-                                    {'item_id': item_id,
-                                     'metric_id': metric_id,
-                                     't': time_index,
-                                     'v': pf})
+                            print(metric_id.split('.')[0])
+                            obj_monitor = monitors.get(metric_id.split('.')[0])
+                            if obj_monitor:
+                                print(obj_monitor)
+                                pf = obj_monitor.get_item_and_metric(item_id, metric_id)
+                                if pf is not None:
+                                    params.append(
+                                        {'item_id': item_id,
+                                         'metric_id': metric_id,
+                                         't': time_index,
+                                         'v': pf})
+                                else:
+                                    print(time.time(), "не собрано", item_id, metric_id, pf, "!!!!!!!!!!!!!!!1")
                             else:
-                                print(time.time(), "не собрано", item_id, metric_id, pf, "!!!!!!!!!!!!!!!1")
+                                print(f"[WARN] Не найден монитор для метрики {metric_id}")
             print(f"!! СОБРАНО МЕТРИК {len(params)}")
             time_1 = time.time()
             insert_params(CONN, params)
@@ -62,10 +81,18 @@ def main():
     except Exception as e:
         print(e)
     finally:
-        CONN.close()
-        stop_event.set()
-        cpu_update_thread.join()
-        print("Поток завершен.")
+        print("Остановка потоков...")
+        stop_event.set()  # сигнал всем потокам на завершение
+
+        for thread in threads:
+            thread.join()
+            print("Поток завершён")
+
+        if CONN:
+            CONN.close()
+            print("Соединение с БД закрыто")
+
+        print("Все потоки завершены. Выход из программы.")
 
 if __name__ == "__main__":
     main()

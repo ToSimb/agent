@@ -11,9 +11,9 @@ class LvolsMonitor:
                             а значением - объект класса Lvol.
                             Пример: {'/': <__main__.Lvol object at 0x7e1c0d7bdac0>,
                                      '/boot/efi': <__main__.Lvol object at 0x7e1c0d7a8f10>}
-            lvols_info (dict): Словарь, где ключ - место монтирование,
+            lvols_info (dict): Словарь, где ключ - индекс с нуля по порядку,
                                а значением - строка, представляющая информацию о его месте в системе.
-                               Пример: {'0': 'cpu:0:0', '1': 'cpu:0:1', ...}
+                               Пример: {'/': 'lvol:0', '/boot/efi': 'lvol:1'}
             item_index: Словарь, где ключ - это будущий item_id из схемы,
                         а значением - объект класса Lvol.
                         (по факту мы делаем новые ссылки на объекты)
@@ -25,9 +25,12 @@ class LvolsMonitor:
         self.item_index = {}
         partitions = psutil.disk_partitions()
         filtered_partitions = self.__filter_partitions(partitions)
+        index_lvol = 0
         for p in filtered_partitions:
             self.lvols[p.mountpoint] = Lvol(p.mountpoint)
-            self.lvols_info[p.mountpoint] = f"lvol:{p.mountpoint}"
+            self.lvols_info[p.mountpoint] = f"lvol:{index_lvol}"
+            index_lvol += 1
+
 
     @staticmethod
     def __filter_partitions(partitions):

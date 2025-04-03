@@ -1,7 +1,7 @@
 import json
 import os
 
-settings_file = "storage/my_settings.db"
+settings_file = "storage/my_settings.txt"
 
 def check_settings():
     return os.path.exists(settings_file)

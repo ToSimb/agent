@@ -98,16 +98,16 @@ class EthPort:
         bandwidth_stat = bandwidth_stats.get(self.name, None)
         self.max_bandwidth = int(bandwidth_stat.speed * 125000) if bandwidth_stat.speed != 0.0 else None
         self.params = {
-            "port.in.bytes": None,
-            "port.in.packets": None,
-            "port.in.speed": None,
-            "port.in.load": None,
-            "port.out.errors": None,
-            "port.out.bytes": None,
-            "port.out.packets": None,
-            "port.in.errors": None,
-            "port.out.speed": None,
-            "port.out.load": None
+            "if.in.bytes": None,
+            "if.in.packets": None,
+            "if.in.speed": None,
+            "if.in.load": None,
+            "if.out.errors": None,
+            "if.out.bytes": None,
+            "if.out.packets": None,
+            "if.in.errors": None,
+            "if.out.speed": None,
+            "if.out.load": None
         }
 
     def update(self, first_stats_eth_port, second_stats_eth_port):
@@ -122,16 +122,16 @@ class EthPort:
             out_load =  round((out_speed / float(self.max_bandwidth)) * 100.0, 2)
 
         result = {
-            "port.in.bytes": second_stats_eth_port.bytes_recv,
-            "port.in.packets": second_stats_eth_port.packets_recv,
-            "port.in.speed": in_speed,
-            "port.in.load": in_load,
-            "port.out.errors": second_stats_eth_port.errout,
-            "port.out.bytes": second_stats_eth_port.bytes_sent,
-            "port.out.packets": second_stats_eth_port.packets_sent,
-            "port.in.errors": second_stats_eth_port.errin,
-            "port.out.speed": out_speed,
-            "port.out.load": out_load
+            "if.in.bytes": second_stats_eth_port.bytes_recv,
+            "if.in.packets": second_stats_eth_port.packets_recv,
+            "if.in.speed": in_speed,
+            "if.in.load": in_load,
+            "if.out.errors": second_stats_eth_port.errout,
+            "if.out.bytes": second_stats_eth_port.bytes_sent,
+            "if.out.packets": second_stats_eth_port.packets_sent,
+            "if.in.errors": second_stats_eth_port.errin,
+            "if.out.speed": out_speed,
+            "if.out.load": out_load
         }
         self.params.update(result)
 
