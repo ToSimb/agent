@@ -1,8 +1,9 @@
-import httpx
+import requests
 import threading
 import time
 import sys
 import signal
+import atexit
 
 from logger.logger_rest_client import logger_rest_client
 from config import (DEBUG_MODE,
@@ -54,16 +55,21 @@ if not check_settings():
     logger_rest_client.info("Созданы начальные настройки")
     create_settings()
 
-
 def signal_handler(sig, frame):
-    CONN.close()
-    logger_rest_client.info("Выход из системы")
+    cleanup_and_exit()
+
+def cleanup_and_exit():
+    if CONN:
+        CONN.close()
+    logger_rest_client.info("Выход из системы (через atexit или interrupt)")
     sys.exit(0)
 
 # возможно для виндовс придется переделать через ctypes !!!!
 # либо переписать завершение программы через глобальный флаг, а не через поток-демон !!
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
+atexit.register(cleanup_and_exit)
+
 
 def registration_agent(agent_data, agent_reg_response):
     params = {}
@@ -75,7 +81,7 @@ def registration_agent(agent_data, agent_reg_response):
         logger_rest_client.info(f"Перерегистрация агента {agent_reg_response['agent_id']}")
     while True:
         try:
-            response = httpx.post(f"{SERVER_URL}/agent-scheme", json=agent_data, params=params, timeout=60)
+            response = requests.post(f"{SERVER_URL}/agent-scheme", json=agent_data, params=params, timeout=60)
             if response.status_code == 200:
                 logger_rest_client.info(f"Регистрация/перерегистрация успешна")
                 return response.json()
@@ -92,10 +98,10 @@ def registration_agent(agent_data, agent_reg_response):
             else:
                 logger_rest_client.error(f"Ошибка регистрации: {response.status_code} - {response.text}")
                 sys.exit(1)
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             logger_rest_client.error("Сервер недоступен. Таймаут при выполнении запроса.")
             time.sleep(60)
-        except httpx.ConnectError:
+        except requests.exceptions.ConnectionError:
             logger_rest_client.info("Сервер недоступен. Повтор через 60 секунд.")
             time.sleep(60)
         except Exception as e:
@@ -112,7 +118,7 @@ def check_server():
                     'agent_id': AGENT_ID,
                     'user_query_interval_revision': USER_QUERY_INTERVAL_REVISION
                 }
-                response = httpx.get(SERVER_URL + "/check", params=params, timeout=HTTP_TIMEOUT_S)
+                response = requests.get(SERVER_URL + "/check", params=params, timeout=HTTP_TIMEOUT_S)
                 if response.status_code == 200:
                     logger_rest_client.info(f"CHECK: {response.status_code}")
                 elif response.status_code == 227:
@@ -121,19 +127,22 @@ def check_server():
                     if227_server()
                 else:
                     logger_rest_client.warning(f"CHECK: {response.status_code}")
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             logger_rest_client.error("CHECK ERROR: Таймаут при выполнении запроса.")
+        # подумать - надо ли вообще делать это исключение!
+        except requests.exceptions.ConnectionError:
+            logger_rest_client.error("CHECK ERROR: Сервер недоступен — ошибка подключения.")
         except Exception as e:
             logger_rest_client.error(f"CHECK ERROR: {e}")
         time.sleep(CHECK_SURVEY_PERIOD)
 
-def params_server(AGENT_ID, result):
+def post_params_server(AGENT_ID, result):
     while True:
         try:
             params = {
                 'agent_id': AGENT_ID,
             }
-            response = httpx.post(SERVER_URL + "/params", params=params, json=result, timeout=HTTP_TIMEOUT_S)
+            response = requests.post(SERVER_URL + "/params", params=params, json=result, timeout=HTTP_TIMEOUT_S)
             if response.status_code == 200:
                 logger_rest_client.info(f"PARAMS: {response.status_code}")
                 return True
@@ -144,19 +153,23 @@ def params_server(AGENT_ID, result):
                 return True
             elif response.status_code in [404, 527]:
                 logger_rest_client.info(f"PARAMS: {response.status_code}. Повтор через {PARAMS_SURVEY_PERIOD} сек.")
-                time.sleep(PARAMS_SURVEY_PERIOD)
             elif response.status_code in [427, 528]:
                 logger_rest_client.error(f"PARAMS: {response.status_code} - {response.text}.")
-                return False
+                raise
             else:
                 logger_rest_client.warning(f"PARAMS: {response.status_code} - {response.text}")
-                return False
-        except httpx.TimeoutException:
+                raise
+        except requests.exceptions.Timeout:
             logger_rest_client.error("PARAMS ERROR: Таймаут при выполнении запроса.")
+            return False
+        # подумать - надо ли вообще делать это исключение!
+        except requests.exceptions.ConnectionError:
+            logger_rest_client.error("PARAMS ERROR: Сервер недоступен — ошибка подключения.")
+            return False
         except Exception as e:
             logger_rest_client.error(f"PARAMS ERROR: {e}")
-            return False
-        time.sleep(PARAMS_SURVEY_PERIOD)
+            raise
+
 
 def if227_server():
     try:
@@ -164,7 +177,7 @@ def if227_server():
         params = {
             'agent_id': AGENT_ID,
         }
-        response = httpx.get(SERVER_URL + "/metric-info-list", params=params, timeout=HTTP_TIMEOUT_S)
+        response = requests.get(SERVER_URL + "/metric-info-list", params=params, timeout=HTTP_TIMEOUT_S)
         if response.status_code == 200:
             result = response.json()
             save_file(result, METRIC_INFO_FILE_PATH)
@@ -178,6 +191,9 @@ try:
     if DEBUG_MODE:
         AGENT_SCHEME_FILE_PATH = 'create_scheme/agent_scheme.json'
     agent_scheme = open_file(AGENT_SCHEME_FILE_PATH)
+    if agent_scheme is None:
+        logger_rest_client.error("Файл схемы агента не найден. Завершение.")
+        sys.exit(0)
     _, USER_QUERY_INTERVAL_REVISION = get_settings()
     if agent_scheme is None:
         sys.exit(0)
@@ -212,28 +228,24 @@ try:
     # основной цикл передачи ПФ
     while True:
         ids_list, value = collecting_params(CONN)
-
         if len(value) > 0:
             result = {
                 "scheme_revision": agent_scheme["scheme_revision"],
                 "user_query_interval_revision": USER_QUERY_INTERVAL_REVISION,
                 "value": value
             }
-            if params_server(AGENT_ID, result):
+            if post_params_server(AGENT_ID, result):
                 count_delete = delete_params(CONN, ids_list)
                 logger_rest_client.info(f"DB: Удаленно {count_delete} отправленных данных")
-            else:
-                CONN.close()
-                logger_rest_client.info("Выход из системы")
-                sys.exit(0)
         else:
             logger_rest_client.info("Нет данных в БД")
         time.sleep(PARAMS_SURVEY_PERIOD)
-    #     break
-    # CONN.close()
-    # logger_rest_client.info("Выход из системы")
-    # sys.exit(0)
 
 except Exception as e:
     logger_rest_client.error(e)
+
+finally:
+    if CONN is not None:
+        CONN.close()
+    logger_rest_client.info("Выход из системы")
     sys.exit(1)
