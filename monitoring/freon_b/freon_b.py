@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 
 URL = f"http://127.0.0.1:8080/freon/25_2"
 # URL = f"http://192.168.123.61:9002/api/v1/system"
@@ -10,7 +11,7 @@ COUNT_SENSOR_I = 14
 
 
 class FreonB:
-    def __init__(self, file_name):
+    def __init__(self):
         """
         Инициализация экземпляра класса.
 
@@ -42,6 +43,8 @@ class FreonB:
 
                                      '1110': self.agent_connection }
         """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = script_dir + "/freon_dict.txt"
         self.vus = {}
         self.vus_info = {}
         self.item_index = {}

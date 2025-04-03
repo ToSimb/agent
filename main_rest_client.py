@@ -33,7 +33,7 @@ from storage.settings_handler import (check_settings,
 # _________________________
 SERVER_URL = f"http://{IP}:{PORT}"
 if DEBUG_MODE:
-    SERVER_URL = "http://127.0.0.1:8080"
+    SERVER_URL = "http://127.0.0.1:8080/at"
 
 AGENT_ID = -1
 USER_QUERY_INTERVAL_REVISION = 0
@@ -175,6 +175,8 @@ def if227_server():
 
 try:
     # инициализация
+    if DEBUG_MODE:
+        AGENT_SCHEME_FILE_PATH = 'create_scheme/agent_scheme.json'
     agent_scheme = open_file(AGENT_SCHEME_FILE_PATH)
     _, USER_QUERY_INTERVAL_REVISION = get_settings()
     if agent_scheme is None:

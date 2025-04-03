@@ -1,12 +1,13 @@
 import json
 import requests
+import os
 
 URL = f"http://127.0.0.1:8080/freon/22"
 # URL = f"http://192.168.123.61:9002/api/v1/system"
 
 
 class FreonA:
-    def __init__(self, file_name):
+    def __init__(self):
         """
         Инициализация экземпляра класса.
 
@@ -35,6 +36,8 @@ class FreonA:
 
                                      '1110': self.agent_connection }
         """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = script_dir + "/freon_dict.txt"
         self.vus = {}
         self.vus_info = {}
         self.conn = False
@@ -176,7 +179,7 @@ class Board_fa:
     def get_all_obj(self):
         return self.units_T, self.units_U, self.units_I
 
-    def update(self, line:dict):
+    def update(self, line: dict):
         params, units_T_data, units_U_data, units_I_data = self.__parse_response_data_FA(line)
         if units_T_data:
             for index in range(len(units_T_data)):
@@ -190,7 +193,7 @@ class Board_fa:
         self.params.update(params)
 
     @staticmethod
-    def __parse_response_data_FA(self, line: dict):
+    def __parse_response_data_FA(line: dict):
         i_stat = line.get("stat")
         line_data = {
             "asic.name": line.get("name"),

@@ -37,7 +37,7 @@ def main():
 
         threads = []
         for prefix, monitor in monitors.items():
-            create_index_for_any(f'monitoring/settings_file/{prefix}_final.txt', monitor)
+            create_index_for_any(f'monitoring/_settings_file/{prefix}_final.txt', monitor)
             t = threading.Thread(target=periodic_update, args=(monitor, 1))
             t.start()
             threads.append(t)

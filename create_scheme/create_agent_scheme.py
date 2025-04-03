@@ -108,7 +108,7 @@ def main():
             "scheme_revision": 1,
             "scheme": {
                 "metrics": filtered_metrics,
-                "templates": templates_data if templates_data else [],
+                "templates": templates_data.get("templates", []),
                 "item_id_list": item_id_list,
                 "join_id_list": [],
                 "item_info_list": []
