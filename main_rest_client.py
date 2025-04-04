@@ -27,9 +27,8 @@ from storage.sqlite_commands import (create_connection,
                                      clear_table,
                                      delete_params)
 from storage.settings_handler import (check_settings,
-                                      create_settings,
-                                      get_settings,
-                                      save_settings)
+                                      update_settings,
+                                      get_settings)
 
 # _________________________
 SERVER_URL = f"http://{IP}:{PORT}"
@@ -53,12 +52,17 @@ logger_rest_client.info("Подключено к БД")
 
 if not check_settings():
     logger_rest_client.info("Созданы начальные настройки")
-    create_settings()
+    update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, True)
 
 def signal_handler(sig, frame):
     cleanup_and_exit()
 
 def cleanup_and_exit():
+    try:
+        update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, False)
+    except Exception as e:
+        logger_rest_client.warning(f"Не удалось обновить настройки при завершении: {e}")
+
     if CONN:
         CONN.close()
     logger_rest_client.info("Выход из системы (через atexit или interrupt)")
@@ -170,10 +174,10 @@ def post_params_server(AGENT_ID, result):
             logger_rest_client.error(f"PARAMS ERROR: {e}")
             raise
 
-
 def if227_server():
     try:
         global USER_QUERY_INTERVAL_REVISION
+        global AGENT_ID
         params = {
             'agent_id': AGENT_ID,
         }
@@ -182,6 +186,7 @@ def if227_server():
             result = response.json()
             save_file(result, METRIC_INFO_FILE_PATH)
             USER_QUERY_INTERVAL_REVISION = result["user_query_interval_revision"]
+            update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, True)
     except Exception as e:
         logger_rest_client.error(f"227 ERROR: {e}")
     return False
@@ -194,7 +199,7 @@ try:
     if agent_scheme is None:
         logger_rest_client.error("Файл схемы агента не найден. Завершение.")
         sys.exit(0)
-    _, USER_QUERY_INTERVAL_REVISION = get_settings()
+    _, USER_QUERY_INTERVAL_REVISION, _ = get_settings()
     if agent_scheme is None:
         sys.exit(0)
 
@@ -214,11 +219,8 @@ try:
             sys.exit(1)
 
     AGENT_ID = agent_reg_response["agent_id"]
-    settings_dict = {
-        "scheme_revision": agent_scheme["scheme_revision"],
-        "user_query_interval_revision": USER_QUERY_INTERVAL_REVISION
-    }
-    save_settings(settings_dict)
+
+    update_settings(agent_scheme["scheme_revision"], USER_QUERY_INTERVAL_REVISION, True)
 
     # создания потока который будет производить чек сервера
     check_thread = threading.Thread(target=check_server)
@@ -243,9 +245,17 @@ try:
 
 except Exception as e:
     logger_rest_client.error(e)
+    try:
+        update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, False)
+    except Exception as e:
+        logger_rest_client.warning(f"Не удалось обновить настройки при завершении: {e}")
 
 finally:
     if CONN is not None:
         CONN.close()
+    try:
+        update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, False)
+    except Exception as e:
+        logger_rest_client.warning(f"Не удалось обновить настройки при завершении: {e}")
     logger_rest_client.info("Выход из системы")
     sys.exit(1)
