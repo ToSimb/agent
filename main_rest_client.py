@@ -20,7 +20,8 @@ from config import (DEBUG_MODE,
                     update_config)
 from rest_client.service import (open_file,
                                  save_file,
-                                 collecting_params)
+                                 collecting_params,
+                                 filter_for_mil)
 from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      create_table,
@@ -184,7 +185,8 @@ def if227_server():
         response = requests.get(SERVER_URL + "/metric-info-list", params=params, timeout=HTTP_TIMEOUT_S)
         if response.status_code == 200:
             result = response.json()
-            save_file(result, METRIC_INFO_FILE_PATH)
+            mil_227 = filter_for_mil("agent_reg_response.json", result)
+            save_file(mil_227, METRIC_INFO_FILE_PATH)
             USER_QUERY_INTERVAL_REVISION = result["user_query_interval_revision"]
             update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, True)
     except Exception as e:

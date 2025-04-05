@@ -95,3 +95,17 @@ def transform_data(params):
     output_data = sorted(result.values(), key=lambda x: (x['item_id'], x['metric_id']))
 
     return ids_list, output_data
+
+def filter_for_mil(file_name_agent_reg_response, result_response):
+    agent_reg_response = open_file(file_name_agent_reg_response)
+
+    item_ids = [data['item_id'] for data in agent_reg_response['item_id_list']]
+
+    result = [
+        (entry['item_id'], entry['metric_id'], entry['user_query_interval'])
+        for entry in result_response['metric_info_list']
+        if entry['item_id'] in item_ids
+    ]
+
+    return result
+
