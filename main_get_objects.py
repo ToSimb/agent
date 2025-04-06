@@ -31,17 +31,17 @@ def monitor_start(monitor_class, tag):
     logger_monitoring.info(f'{tag.upper()} get data time:         {time_data}')
     logger_monitoring.info(" * " * 10)
 
-    data_file = f'monitoring/params_all_objs/{tag}_data.txt'
+    data_file = f'monitoring/_params_all_objs/{tag}_data.txt'
     save_file_data(data_file, data)
 
 def main():
     logger_monitoring.info("- - -" * 10)
     monitors = [
-        # (CPUsMonitor, 'cpu'),
-        # (GPUsMonitor, 'gpu'),
-        # (SystemMonitor, 'system'),
-        # (LvolsMonitor, 'lvol'),
-        # (EthPortMonitor, 'eth_port'),
+        (CPUsMonitor, 'cpu'),
+        (GPUsMonitor, 'gpu'),
+        (SystemMonitor, 'system'),
+        (LvolsMonitor, 'lvol'),
+        (EthPortMonitor, 'eth_port'),
         # (FreonA, 'f_a'),
         # (FreonB, 'f_b')
     ]

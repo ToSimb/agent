@@ -9,6 +9,18 @@ def measure_execution_time(func, *args, **kwargs):
     execution_time = end_time - start_time
     return result, execution_time
 
+def open_file(file_name):
+    if os.path.isfile(file_name):
+        try:
+            with open(file_name, 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Ошибка при чтении файла {file_name}: {e}")
+            return None
+    else:
+        print(f"Файл {file_name} не найден.")
+        return None
+
 def save_file(file_name, any_objects):
     if not os.path.isfile(file_name):
         with open(file_name, 'w', encoding='utf-8') as file:
