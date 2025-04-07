@@ -309,6 +309,3 @@ class Unit_I(SubObject):
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
-
-a = FreonA()
-print(a.get_objects_description())
