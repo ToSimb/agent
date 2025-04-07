@@ -1,6 +1,8 @@
 import json
 import time
 import os
+import math
+from functools import reduce
 
 def measure_execution_time(func, *args, **kwargs):
     start_time = time.time()
@@ -39,40 +41,62 @@ def save_file_data(file_name, any_objects):
 
 def create_index_for_any(file_name, object_monitor):
     with open(file_name, 'r') as cpu_file:
+        index_list = []
         file_index = json.load(cpu_file)
         object_monitor.create_index(file_index)
+        for line, value in file_index.items():
+            index_list.append(value)
+        return index_list
 
-def get_metrics_test():
-    # считываем с файла!
-    prototype_list = {
-        '12': {
-            'core.user.time111111': 1,
-            'core.system.time': 2,
-            'core.irq.time': 3,
-            'core.softirq.time': 1,
-            'core.idle.time': 1,
-            'core.iowait': 2,
-            'core.load': 3
-        },
-        '13': {
-            'core.user.time': 1,
-            'core.system.time': 2,
-            'core.irq.time': 3,
-            'core.softirq.time': 1,
-            'core.idle.time': 1,
-            'core.iowait': 2,
-            'core.load': 3
-        },
-        '16': {
-            'core.user.time': 1,
-            'core.system.time': 2
-        },
-    }
+def get_metrics_polling_plan():
+    """
+    value_dict (dict[int, list[tuple[str, str]]]):
+        Словарь, где ключ — интервал,
+        значение — список пар (item_id, metric_id)
+    item_all_interval (dict[str, set[int]]):
+        Словарь, где ключ — item_id,
+        значение — множество интервалов, с которыми он должен опрашиваться.
+    """
+    mil = open_file('metric_interval.json')
+
+    mil_227 = open_file('metric_info_227.json')
+    if mil_227 is not None:
+        mil = merge_metric_intervals(mil, mil_227)
+
     value_dict = {}
-    for item_id, metrics in prototype_list.items():
-        for metric_id, time_value in metrics.items():
-            if time_value not in value_dict:
-                value_dict[time_value] = []
-            # Добавляем пару (внешний ключ, внутренний ключ) в список
-            value_dict[time_value].append((item_id, metric_id))
-    return value_dict
+    item_all_interval = {}
+    for line in mil:
+        if line[2] not in value_dict:
+            value_dict[line[2]] = []
+        # Добавляем пару (внешний ключ, внутренний ключ) в список
+        value_dict[line[2]].append((line[0], line[1]))
+        if line[0] not in item_all_interval:
+            item_all_interval[line[0]] = set()
+        item_all_interval[line[0]].add(line[2])
+
+    return value_dict, item_all_interval
+
+def merge_metric_intervals(mil: list, mil_227: list) -> list:
+
+    mil_227_map = {
+        (item_id, metric_id): interval
+        for item_id, metric_id, interval in mil_227
+    }
+
+    result = []
+    for item_id, metric_id, interval in mil:
+        key = (item_id, metric_id)
+        new_interval = mil_227_map.get(key, interval)
+        result.append([item_id, metric_id, new_interval])
+
+    return result
+
+def calculate_gcd_for_group(item_ids, interval_map):
+    intervals = set()
+
+    for item_id in item_ids:
+        item_intervals = interval_map.get(item_id, set())
+        intervals.update(i for i in item_intervals if i != 0)
+    if not intervals:
+        return None
+    return reduce(math.gcd, intervals)
