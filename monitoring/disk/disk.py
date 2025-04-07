@@ -3,12 +3,16 @@ import platform
 import subprocess
 import shutil
 import json
-import time
+from base import BaseObject
+from base import SubObject
 
 
-class DisksMonitor:
+class DisksMonitor(BaseObject):
     def __init__(self):
+        super().__init__()
         self.disks = {}
+        self.disks_info = {} #TODO
+        self.item_index = {} #TODO
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
@@ -23,8 +27,8 @@ class DisksMonitor:
             print("от smartctl")
             for i in self.disks.keys():
                 print(i)
-        except:
-            print(f"Ошибка выполнения команды {command}")
+        except Exception as e:
+            print(f"Ошибка выполнения команды {command}: {e}")
 
     def update(self):
         disks_speed = self.__get_disks_rw_speed()
@@ -41,6 +45,23 @@ class DisksMonitor:
             print(f"Параметры {disk}:")
             aaa = self.disks[disk].get_params_all()
             print(aaa)
+
+    def get_item_and_metric(self, item_id: str, metric_id: str):
+        pass
+
+    def create_index(self, disk_dict: dict):
+        for index in disk_dict:
+            if disk_dict[index] is not None:
+                for key, value in self.disks_info.items():
+                    if value == index:
+                        self.item_index[str(disk_dict[index])] = self.disks.get(key, None)
+                        break
+                else:
+                    print(f'Для индекса {index} нет значения')
+        print("Индексы для дисков обновлены")
+
+    def get_objects_description(self):
+        return self.disks_info
 
     @staticmethod
     def __replace_device_name(index):
@@ -117,8 +138,9 @@ class DisksMonitor:
             return {}
 
 
-class Disk:
+class Disk(SubObject):
     def __init__(self, disk_indo: list):
+        super().__init__()
         self.name = disk_indo[0]
         self.interface_type = disk_indo[1]
         self.params = {
@@ -133,9 +155,7 @@ class Disk:
         self.system = platform.system()
 
     def update(self, disks_speed):
-        result = {}
-        result["disk.write.bytes.per.sec"] = disks_speed["write"]
-        result["disk.read.bytes.per.sec"] = disks_speed["read"]
+        result = {"disk.write.bytes.per.sec": disks_speed["write"], "disk.read.bytes.per.sec": disks_speed["read"]}
 
         if self.system == "Windows":
             command = ['smartctl', '-A', '-j', '-d', self.interface_type, self.name]
@@ -147,9 +167,6 @@ class Disk:
             if not output:
                 return
             data = json.loads(output)
-            # with open(f"{self.name[-3:]}.json", "w") as f:
-            #     json.dump(data, f, indent=4, ensure_ascii=False)
-            #     print(f"{self.name[-3:]}.json")
         except Exception as e:
             print(f"Ошибка вызова команды {command} - {e}")
             return
@@ -207,23 +224,3 @@ class Disk:
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
-
-    @staticmethod
-    def validate_value(type_, value):
-        if type_ == "string":
-            return str(value)
-        elif type_ == "integer":
-            try:
-                return int(value)
-            except (ValueError, TypeError):
-                return None
-        elif type_ == "double":
-            try:
-                return round(float(str(value).replace(',', '.')), 2)
-            except (ValueError, TypeError):
-                return None
-        elif type_ == "state":
-            allowed_states = {"OK", "WARN", "ERROR", "FATAL", "UNKNOWN"}
-            val_str = str(value).upper().strip()
-            return val_str if val_str in allowed_states else None
-        return None
