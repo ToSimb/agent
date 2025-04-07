@@ -6,12 +6,12 @@
 
 | Параметр                           | Описание                                  | Тип данных | Величина   |
 |------------------------------------|-------------------------------------------|------------|------------|
-| `disk.write.bytes.per.sec`         | Скорость записи на диск.                  | float      | байт/сек   |
+| `disk.write.bytes.per.sec`         | Скорость записи на диск.                  | double     | байт/сек   |
 | `disk.temperature`                 | Температура диска.                        | integer    | C          |
 | `disk.seek.error.rate`             | Частота ошибок позиционирования диска.    | integer    | ошибок/сек |
 | `disk.read.error.retry.rate`       | Частота ошибок чтения диска.              | integer    | ошибок/сек |
 | `disk.reallocated.sectors.count`   | Количество переназначенных секторов диска | integer    | none       |
-| `disk.read.bytes.per.sec`          | Скорость чтения с диска                   | float      | байт/сек   |
+| `disk.read.bytes.per.sec`          | Скорость чтения с диска                   | double     | байт/сек   |
 | `disk.head.flying.hours`           | Общее время работы диска                  | integer    | ч          |
 
 ## Примечание

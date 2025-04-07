@@ -1,9 +1,11 @@
 import psutil
 import time
+from base import BaseObject
+from base import SubObject
 
 INTERVAL = 0.5
 
-class EthPortMonitor:
+class EthPortMonitor(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -25,6 +27,7 @@ class EthPortMonitor:
             eth_ports_to_update (dict): Уникальная переменная, которая указывает какие порты обновлять
                             Пример: {'lo': True, 'enp34s0': False}
         """
+        super().__init__()
         self.eth_ports = {}
         self.eth_ports_info = {}
         self.eth_ports_to_update = {}
@@ -91,8 +94,10 @@ class EthPortMonitor:
             print(f"ошибка - {item_id}: {metric_id}")
             return None
 
-class EthPort:
+
+class EthPort(SubObject):
     def __init__(self, eth_port_name: str, ):
+        super().__init__()
         self.name = eth_port_name
         bandwidth_stats = psutil.net_if_stats()
         bandwidth_stat = bandwidth_stats.get(self.name, None)
@@ -110,7 +115,7 @@ class EthPort:
             "if.out.load": None
         }
 
-    def update(self, first_stats_eth_port, second_stats_eth_port):
+    def update(self, first_stats_eth_port=None, second_stats_eth_port=None):
         in_speed = round(float(second_stats_eth_port.bytes_recv - first_stats_eth_port.bytes_sent) / INTERVAL, 2)
         out_speed = round(float(second_stats_eth_port.bytes_sent - first_stats_eth_port.bytes_sent) / INTERVAL, 2)
 
@@ -142,7 +147,12 @@ class EthPort:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["if.in.speed", "if.in.load", "if.out.speed", "if.out.load"]:
+                        result = self.validate_value("double", result)
+                    else:
+                        result = self.validate_value("integer", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

@@ -1,12 +1,14 @@
 import json
 import requests
 import os
+from base import BaseObject
+from base import SubObject
 
 URL = f"http://127.0.0.1:8080/freon/22"
 # URL = f"http://192.168.123.61:9002/api/v1/system"
 
 
-class FreonA:
+class FreonA(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -36,6 +38,7 @@ class FreonA:
 
                                      '1110': self.agent_connection }
         """
+        super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = script_dir + "/freon_dict.txt"
         self.vus = {}
@@ -160,8 +163,9 @@ class FreonA:
             return None
 
 
-class Board_fa:
+class Board_fa(SubObject):
     def __init__(self, ip_address: str):
+        super().__init__()
         self.units_T = {}
         self.units_U = {}
         self.units_I = {}
@@ -229,8 +233,9 @@ class Board_fa:
             return None
 
 
-class Unit_T:
+class Unit_T(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.T": None,
         }
@@ -254,8 +259,9 @@ class Unit_T:
             return None
 
 
-class Unit_U:
+class Unit_U(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.U": None,
         }
@@ -279,8 +285,9 @@ class Unit_U:
             return None
 
 
-class Unit_I:
+class Unit_I(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.I": None,
         }
@@ -302,3 +309,6 @@ class Unit_I:
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
+
+a = FreonA()
+print(a.get_objects_description())

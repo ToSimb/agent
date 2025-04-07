@@ -1,7 +1,8 @@
 import psutil
+from base import BaseObject
+from base import SubObject
 
-
-class LvolsMonitor:
+class LvolsMonitor(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -20,6 +21,7 @@ class LvolsMonitor:
                         Пример: {'52': <__main__.Lvol object at 0x7e1c0d7bdac0>,
                                 '53': <__main__.Lvol object at 0x7e1c0d7a8f10>}
         """
+        super().__init__()
         self.lvols = {}
         self.lvols_info = {}
         self.item_index = {}
@@ -81,8 +83,9 @@ class LvolsMonitor:
             return None
 
 
-class Lvol:
+class Lvol(SubObject):
     def __init__(self, mountpoint: str):
+        super().__init__()
         self.mountpoint = mountpoint
         self.params = {
             "lvol.part.mountpoint": mountpoint,
@@ -110,7 +113,12 @@ class Lvol:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["lvol.part.mountpoint"]:
+                        result = self.validate_value("string", result)
+                    else:
+                        result = self.validate_value("integer", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

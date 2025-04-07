@@ -78,14 +78,13 @@ class DisksMonitor:
                         disk_speeds[disk_name] = {"read": float(read_speed), "write": float(write_speed)}
                     except ValueError:
                         disk_speeds[disk_name] = {"read": None, "write": None}
-
             return disk_speeds
-
         except Exception as e:
             print(f"Ошибка при получении данных о скорости дисков в Windows: {e}")
             return {}
 
-    def __get_linux_disk_speed(self):
+    @staticmethod
+    def __get_linux_disk_speed():
         """Получает скорость чтения и записи дисков в Linux с помощью iostat."""
         try:
             result = subprocess.run(["iostat", "-d", "-k", "1", "2"],
@@ -196,10 +195,35 @@ class Disk:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["disk.read.bytes.per.sec", "disk.write.bytes.per.sec"]:
+                        result = self.validate_value("double", result)
+                    else:
+                        result = self.validate_value("integer", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
             print(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
+
+    @staticmethod
+    def validate_value(type_, value):
+        if type_ == "string":
+            return str(value)
+        elif type_ == "integer":
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return None
+        elif type_ == "double":
+            try:
+                return round(float(str(value).replace(',', '.')), 2)
+            except (ValueError, TypeError):
+                return None
+        elif type_ == "state":
+            allowed_states = {"OK", "WARN", "ERROR", "FATAL", "UNKNOWN"}
+            val_str = str(value).upper().strip()
+            return val_str if val_str in allowed_states else None
+        return None

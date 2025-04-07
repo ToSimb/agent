@@ -1,7 +1,9 @@
 import time
 import psutil
+from base import BaseObject
 
-class SystemMonitor:
+
+class SystemMonitor(BaseObject):
     def __init__(self):
         """
         Инициализация единственного экземпляра класса!
@@ -12,7 +14,7 @@ class SystemMonitor:
                                Пример: {"0": "chassis:0"}
             item_index: Значение item_id из будущей схемы
         """
-
+        super().__init__()
         self.system_info = {
             "0": "chassis:0"
         }
@@ -70,8 +72,7 @@ class SystemMonitor:
         print("Индексы для SYSTEM обновлены")
 
     def get_all(self):
-        return_list = []
-        return_list.append(self.params)
+        return_list = [self.params]
         return return_list
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
@@ -79,7 +80,12 @@ class SystemMonitor:
             if item_id == self.item_index:
                 if metric_id in self.params:
                     result = self.params[metric_id]
-                    self.params[metric_id] = None
+                    if result is not None:
+                        self.params[metric_id] = None
+                        if metric_id in ["chassis.load.avg"]:
+                            result = self.validate_value("double", result)
+                        else:
+                            result = self.validate_value("integer", result)
                     return result
                 else:
                     raise KeyError(f"Ключ не найден в словаре.")
