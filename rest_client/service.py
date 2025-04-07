@@ -68,7 +68,7 @@ def transform_data(params):
         ids_list.append(item[0])
         item_id = item_dict['item_id']
         metric_id = item_dict['metric_id']
-        v = item_dict['v']
+        v = str(item_dict['v'])
         comment = item_dict.get('comment')
         etmax = item_dict.get('etmax')
         etmin = item_dict.get('etmin')

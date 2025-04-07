@@ -34,7 +34,8 @@ from storage.settings_handler import (check_settings,
 # _________________________
 SERVER_URL = f"http://{IP}:{PORT}"
 if DEBUG_MODE:
-    SERVER_URL = "http://127.0.0.1:8080/at"
+    # SERVER_URL = "http://127.0.0.1:8080/at"
+    SERVER_URL = "http://127.0.0.1:8080"
 
 AGENT_ID = -1
 USER_QUERY_INTERVAL_REVISION = 0
@@ -86,6 +87,8 @@ def registration_agent(agent_data, agent_reg_response):
         logger_rest_client.info(f"Перерегистрация агента {agent_reg_response['agent_id']}")
     while True:
         try:
+            print(params)
+            print(agent_data)
             response = requests.post(f"{SERVER_URL}/agent-scheme", json=agent_data, params=params, timeout=60)
             if response.status_code == 200:
                 logger_rest_client.info(f"Регистрация/перерегистрация успешна")
@@ -158,6 +161,7 @@ def post_params_server(AGENT_ID, result):
                 return True
             elif response.status_code in [404, 527]:
                 logger_rest_client.info(f"PARAMS: {response.status_code}. Повтор через {PARAMS_SURVEY_PERIOD} сек.")
+                return False
             elif response.status_code in [427, 528]:
                 logger_rest_client.error(f"PARAMS: {response.status_code} - {response.text}.")
                 raise
@@ -195,8 +199,6 @@ def if227_server():
 
 try:
     # инициализация
-    if DEBUG_MODE:
-        AGENT_SCHEME_FILE_PATH = 'create_scheme/agent_scheme.json'
     agent_scheme = open_file(AGENT_SCHEME_FILE_PATH)
     if agent_scheme is None:
         logger_rest_client.error("Файл схемы агента не найден. Завершение.")
@@ -238,6 +240,7 @@ try:
                 "user_query_interval_revision": USER_QUERY_INTERVAL_REVISION,
                 "value": value
             }
+            print(result)
             if post_params_server(AGENT_ID, result):
                 count_delete = delete_params(CONN, ids_list)
                 logger_rest_client.info(f"DB: Удаленно {count_delete} отправленных данных")
