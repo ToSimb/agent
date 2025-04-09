@@ -11,8 +11,8 @@ class DisksMonitor(BaseObject):
     def __init__(self):
         super().__init__()
         self.disks = {}
-        self.disks_info = {}  #TODO
-        self.item_index = {}  #TODO
+        self.disks_info = {}
+        self.item_index = {}
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
@@ -23,31 +23,27 @@ class DisksMonitor(BaseObject):
             result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding).strip().split("\n")
             if result:
                 all_disks = [[line.split()[0], line.split()[2]] for line in result if line.strip()]
-                self.disks = {f"{disk[0]}": Disk(disk) for disk in all_disks}
-            print("от smartctl")
-            for i in self.disks.keys():
-                print(i)
+                for disk in all_disks:
+                    self.disks[disk[0]] = Disk(disk)
+                    disk_index = self.__replace_device_name(disk[0], True)
+                    self.disks_info[disk[0]] = f"disk:{disk_index}"
         except Exception as e:
             print(f"Ошибка выполнения команды {command}: {e}")
 
     def update(self):
         disks_speed = self.__get_disks_rw_speed()
-        print("от iostat")
-        for i in disks_speed.keys():
-            print(i)
-
-        for disk_key in self.disks.keys():
-            print("Обновление ", disk_key)
-            self.disks[disk_key].update(disks_speed[disk_key])
+        for key, disk in self.disks.items():
+            disk.update(disks_speed[key])
 
     def get_all(self):
-        for disk in self.disks:
-            print(f"Параметры {disk}:")
-            aaa = self.disks[disk].get_params_all()
-            print(aaa)
+        return [{index: gpu.get_params_all()} for index, gpu in self.disks.items()]
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
-        pass
+        try:
+            return self.item_index.get(item_id).get_metric(metric_id)
+        except Exception as e:
+            print(f"Ошибка - {item_id}: {metric_id} - {e}")
+            return None
 
     def create_index(self, disk_dict: dict):
         for index in disk_dict:
@@ -64,12 +60,27 @@ class DisksMonitor(BaseObject):
         return self.disks_info
 
     @staticmethod
-    def __replace_device_name(index):
-        letters = []
-        while index >= 0:
-            letters.append(chr(ord('a') + (index % 26)))
-            index = (index // 26) - 1
-        return f"/dev/sd{''.join(reversed(letters))}"
+    def __replace_device_name(index_or_name, reverse=False):
+        if reverse:
+            # Ожидаем имя устройства, например: "/dev/sdab"
+            name = index_or_name
+            if not name.startswith("/dev/sd"):
+                return None
+            suffix = name[7:]  # удаляем "/dev/sd"
+            result = 0
+            for char in suffix:
+                result = result * 26 + (ord(char) - ord('a') + 1)
+            return str(result - 1)
+        else:
+            # Ожидаем индекс, например: 27
+            index = index_or_name
+            if index < 0:
+                return None
+            letters = []
+            while index >= 0:
+                letters.append(chr(ord('a') + (index % 26)))
+                index = (index // 26) - 1
+            return f"/dev/sd{''.join(reversed(letters))}"
 
     def __get_disks_rw_speed(self):
         if self.system == "Windows":

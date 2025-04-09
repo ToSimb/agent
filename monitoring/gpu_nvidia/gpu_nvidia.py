@@ -99,8 +99,8 @@ class GPUsMonitor(BaseObject):
     def get_item_and_metric(self, item_id: str, metric_id:str):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
-        except:
-            print(f"ошибка - {item_id}: {metric_id}")
+        except Exception as e:
+            print(f"Ошибка - {item_id}: {metric_id} - {e}")
             return None
 
     def get_item_origin(self, uuid_gpu: str, metric_id:str):
