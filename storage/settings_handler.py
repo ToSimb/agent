@@ -1,8 +1,10 @@
 import json
 import os
-from datetime import datetime
 
-settings_file = "storage/my_settings.txt"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+settings_file = os.path.join(BASE_DIR, "my_settings.txt")
 
 def check_settings():
     return os.path.exists(settings_file)
@@ -22,9 +24,9 @@ def save_settings(settings):
 def get_file_mtime():
     try:
         timestamp = os.path.getmtime(settings_file)
-        return datetime.fromtimestamp(timestamp)
+        return int(timestamp)
     except FileNotFoundError:
-        return None
+        return -1
 
 def get_settings():
     with open(settings_file, 'r') as file:

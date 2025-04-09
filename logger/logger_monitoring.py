@@ -5,7 +5,7 @@ def setup_logger():
     logger = logging.getLogger('agent:monitoring')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    file_handler = RotatingFileHandler("logger/logs_monitoring.log", maxBytes=300000, backupCount=5)
+    file_handler = RotatingFileHandler("logger/logs_monitoring.log", maxBytes=300000, backupCount=5, encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

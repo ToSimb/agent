@@ -21,7 +21,8 @@ from config import (DEBUG_MODE,
 from rest_client.service import (open_file,
                                  save_file,
                                  collecting_params,
-                                 filter_for_mil)
+                                 filter_for_mil,
+                                 compare_full_paths)
 from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      create_table,
@@ -34,8 +35,8 @@ from storage.settings_handler import (check_settings,
 # _________________________
 SERVER_URL = f"http://{IP}:{PORT}"
 if DEBUG_MODE:
-    # SERVER_URL = "http://127.0.0.1:8080/at"
-    SERVER_URL = "http://127.0.0.1:8080"
+    SERVER_URL = "http://127.0.0.1:8080/at"
+    # SERVER_URL = "http://127.0.0.1:8080"
 
 AGENT_ID = -1
 USER_QUERY_INTERVAL_REVISION = 0
@@ -87,8 +88,6 @@ def registration_agent(agent_data, agent_reg_response):
         logger_rest_client.info(f"Перерегистрация агента {agent_reg_response['agent_id']}")
     while True:
         try:
-            print(params)
-            print(agent_data)
             response = requests.post(f"{SERVER_URL}/agent-scheme", json=agent_data, params=params, timeout=60)
             if response.status_code == 200:
                 logger_rest_client.info(f"Регистрация/перерегистрация успешна")
@@ -190,7 +189,7 @@ def if227_server():
         if response.status_code == 200:
             result = response.json()
             mil_227 = filter_for_mil("agent_reg_response.json", result)
-            save_file(mil_227, METRIC_INFO_FILE_PATH)
+            save_file(mil_227, 'storage/' + METRIC_INFO_FILE_PATH)
             USER_QUERY_INTERVAL_REVISION = result["user_query_interval_revision"]
             update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, True)
     except Exception as e:
@@ -212,7 +211,7 @@ try:
 
     # регистрация/перерегистрация
     if (agent_reg_response is None) or REUPLOAD_AGENT_SCHEME:
-        print("регистрация/перерегистрация")
+        logger_rest_client.info("регистрация/перерегистрация")
         agent_reg_response = registration_agent(agent_scheme, agent_reg_response)
         save_file(agent_reg_response, REG_INFO_FILE_PATH)
         update_config()
@@ -221,6 +220,10 @@ try:
         else:
             logger_rest_client.error("Ошибка при очистке таблицы после регистрации/перерегистрации")
             sys.exit(1)
+
+    # проверка корректности схемы и ответа:
+    if compare_full_paths(agent_scheme, agent_reg_response):
+        sys.exit(0)
 
     AGENT_ID = agent_reg_response["agent_id"]
 
@@ -240,7 +243,6 @@ try:
                 "user_query_interval_revision": USER_QUERY_INTERVAL_REVISION,
                 "value": value
             }
-            print(result)
             if post_params_server(AGENT_ID, result):
                 count_delete = delete_params(CONN, ids_list)
                 logger_rest_client.info(f"DB: Удаленно {count_delete} отправленных данных")
