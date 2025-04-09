@@ -4,6 +4,7 @@ from pysnmp.hlapi import ObjectType, ObjectIdentity, nextCmd, getCmd
 from base import BaseObject
 from base import SubObject
 
+
 class Switch(BaseObject):
     def __init__(self, ip: str, file_path: str = "switches.json"):
         super().__init__()
@@ -31,13 +32,14 @@ class Switch(BaseObject):
         self.snmp_port = current_switch.get("snmp_port", 161)
         self.oids_map = current_switch.get("OIDs", {})
         self.community = current_switch.get("community", "public")
-        self.system_id = config.get("switches", []).index(current_switch)
+        self.system_id = current_switch.get("scheme_number", "")
         print(f"Порядковый номер коммутатора в системе {self.system_id}")
 
         if len(self.oids_map) != 6:
-            print(f"В файле конфигурации указано не верное количество параметров для {self.ip}.")
+            print(f"В файле конфигурации указано не верное количество параметров (OID) для {self.ip}.")
 
         if not self.__check_switch_status():
+            print(f"Ошибка на коммутаторе: {self.ip}. Тестовый запрос SNMP не пройден!")
             return
 
         index_interface = self.__get_switch_interfaces()
@@ -85,13 +87,14 @@ class Switch(BaseObject):
 
     def __get_switch_interfaces(self):
         """
-        Получает количество сетевых интерфейсов и их идентификаторы (ifIndex) с коммутатора по SNMP.
+        Получает список описаний сетевых интерфейсов (ifDescr) с коммутатора по SNMP.
 
-        :return: список ifIndex
+        :return: список ifDescr (например, ['GigabitEthernet0/1', 'Vlan1', ...])
         """
         interfaces = []
-        # SNMP OID для ifIndex: 1.3.6.1.2.1.2.2.1.1
-        oid_if_index = ObjectIdentity('1.3.6.1.2.1.2.2.1.1')
+        # SNMP OID для ifDescr: 1.3.6.1.2.1.2.2.1.2
+        oid_if_descr = ObjectIdentity('1.3.6.1.2.1.2.2.1.2')
+
         for (errorIndication,
              errorStatus,
              errorIndex,
@@ -99,19 +102,28 @@ class Switch(BaseObject):
                                   CommunityData(self.community, mpModel=1),
                                   UdpTransportTarget((self.ip, self.snmp_port), timeout=1, retries=2),
                                   ContextData(),
-                                  ObjectType(oid_if_index),
+                                  ObjectType(oid_if_descr),
                                   lexicographicMode=False):
 
             if errorIndication:
-                print(f"SNMP ошибка на {self.ip} при получении списка интерфейсов: {errorIndication}")
+                print(f"SNMP ошибка на {self.ip} при получении описаний интерфейсов: {errorIndication}")
                 break
             elif errorStatus:
-                print(f"SNMP ошибка на {self.ip}  при получении списка интерфейсов: {errorStatus.prettyPrint()}")
+                print(f"SNMP ошибка на {self.ip} при получении описаний интерфейсов: {errorStatus.prettyPrint()}")
                 break
             else:
                 for varBind in varBinds:
-                    oid, value = varBind
-                    interfaces.append(str(value))
+                    oid, value = varBind # value — это ifDescr (строка)
+                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS'] and 'IB' in str(value): # Ф51 ванны Ib, Ф51 шкаф
+                        value = str(value).split('/')[-1]
+                        interfaces.append(value)
+                    elif self.model in ["D-Link DGS-1210-28X/ME"] and 'D-Link' in str(value): # ФБ в стойке
+                        value = str(value).split()[-1]
+                        interfaces.append(value)
+                    elif self.model in ["Mellanox SX6700"] and 'IB/' in str(value): # Изменить для других коммутаторов
+                        pass
+                    else:
+                        print(f"Модель {self.model} коммутатора с ip: {self.ip} не поддерживается!")
         return interfaces
 
     def get_objects_description(self):
@@ -157,7 +169,7 @@ class Switch(BaseObject):
                             result[if_index] = {}
                         result[if_index][metric_name] = int(value)
 
-        for interface_index, result_line in result:
+        for interface_index, result_line in result.items():
             self.interfaces.get(interface_index).update(result_line)
 
 
@@ -197,7 +209,9 @@ class Interface(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    result = self.validate_value("integer", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

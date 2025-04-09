@@ -11,8 +11,8 @@ class DisksMonitor(BaseObject):
     def __init__(self):
         super().__init__()
         self.disks = {}
-        self.disks_info = {} #TODO
-        self.item_index = {} #TODO
+        self.disks_info = {}  #TODO
+        self.item_index = {}  #TODO
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
@@ -37,7 +37,7 @@ class DisksMonitor(BaseObject):
             print(i)
 
         for disk_key in self.disks.keys():
-            print("Обновление ",disk_key)
+            print("Обновление ", disk_key)
             self.disks[disk_key].update(disks_speed[disk_key])
 
     def get_all(self):
@@ -109,7 +109,7 @@ class DisksMonitor(BaseObject):
         """Получает скорость чтения и записи дисков в Linux с помощью iostat."""
         try:
             result = subprocess.run(["iostat", "-d", "-k", "1", "2"],
-                capture_output=True, text=True, check=True)
+                                    capture_output=True, text=True, check=True)
             lines = result.stdout.strip().split("\n")
             disk_speeds = {}
             for line in reversed(lines):
