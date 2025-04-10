@@ -17,6 +17,8 @@ class Switch(BaseObject):
         self.interfaces = {}
         self.interfaces_info = {}
         self.item_index = {}
+        self.connection_value = None
+        self.connection_id = -1
 
         config = self.__load_config(file_path)
         if not config:
@@ -41,6 +43,7 @@ class Switch(BaseObject):
         if not self.__check_switch_status():
             print(f"Ошибка на коммутаторе: {self.ip}. Тестовый запрос SNMP не пройден!")
             return
+        self.connection_value = True
 
         index_interface = self.__get_switch_interfaces()
         if not index_interface:
@@ -50,6 +53,7 @@ class Switch(BaseObject):
         for index in index_interface:
             self.interfaces[index] = Interface()
             self.interfaces_info[index] = f"switch:{self.system_id}:{index}"
+        self.interfaces_info['connection'] = f"switch:connection"
 
 
     @staticmethod
@@ -132,13 +136,17 @@ class Switch(BaseObject):
     def create_index(self, switch_dict):
         for index in switch_dict:
             if switch_dict[index] is not None:
-                for key, value in self.interfaces_info.items():
-                    if value == index:
-                        self.item_index[str(switch_dict[index])] = self.interfaces_info.get(key, None)
-                        break
+                if index == 'connection':
+                    self.connection_id = switch_dict[index]
+                else:
+                    for key, value in self.interfaces_info.items():
+                        if value == index:
+                            self.item_index[str(switch_dict[index])] = self.interfaces_info.get(key, None)
+                            break
             else:
                 print(f'Для индекса {index} нет значения')
         print("Индексы для коммутаторов обновлены")
+
 
     def update(self):
         result = {}
@@ -169,8 +177,12 @@ class Switch(BaseObject):
                             result[if_index] = {}
                         result[if_index][metric_name] = int(value)
 
-        for interface_index, result_line in result.items():
-            self.interfaces.get(interface_index).update(result_line)
+        if result:
+            self.connection_value = True
+            for interface_index, result_line in result.items():
+                self.interfaces.get(interface_index).update(result_line)
+        else:
+            self.connection_value = False
 
 
     def get_all(self):
@@ -182,10 +194,13 @@ class Switch(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id:str):
         try:
+            if item_id in str(self.connection_id) and metric_id == "connection":
+                return self.connection_value
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"Ошибка - {item_id}: {metric_id} - {e}")
+            print(f"Ошибка получения метрики у {item_id} - {metric_id}: {e}")
             return None
+
 
 class Interface(SubObject):
     def __init__(self):
