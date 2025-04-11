@@ -1,6 +1,8 @@
 import requests
 import json
 import os
+from base import BaseObject
+from base import SubObject
 
 URL = f"http://127.0.0.1:8080/freon/25_2"
 # URL = f"http://192.168.123.61:9002/api/v1/system"
@@ -10,7 +12,7 @@ COUNT_SENSOR_U = 14
 COUNT_SENSOR_I = 14
 
 
-class FreonB:
+class FreonB(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -43,6 +45,7 @@ class FreonB:
 
                                      '1110': self.connection }
         """
+        super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = script_dir + "/freon_dict.txt"
         self.vus = {}
@@ -172,8 +175,9 @@ class FreonB:
             return None
 
 
-class Vu_fb:
+class Vu_fb(SubObject):
     def __init__(self, ip_address: str):
+        super().__init__()
         self.params = {
             "asic.name": ip_address,
             "asic.taskId": None,
@@ -211,8 +215,9 @@ class Vu_fb:
             return None
 
 
-class Board_fb:
+class Board_fb(SubObject):
     def __init__(self):
+        super().__init__()
         self.units_T = {}
         self.units_U = {}
         self.units_I = {}
@@ -272,8 +277,9 @@ class Board_fb:
             return None
 
 
-class Unit_T:
+class Unit_T(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.T": None,
         }
@@ -297,8 +303,9 @@ class Unit_T:
             return None
 
 
-class Unit_U:
+class Unit_U(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.U": None,
         }
@@ -322,8 +329,9 @@ class Unit_U:
             return None
 
 
-class Unit_I:
+class Unit_I(SubObject):
     def __init__(self):
+        super().__init__()
         self.params = {
             "asic.I": None,
         }

@@ -3,12 +3,16 @@ import platform
 import subprocess
 import shutil
 import json
-import time
+from base import BaseObject
+from base import SubObject
 
 
-class DisksMonitor:
+class DisksMonitor(BaseObject):
     def __init__(self):
+        super().__init__()
         self.disks = {}
+        self.disks_info = {}
+        self.item_index = {}
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
@@ -19,36 +23,64 @@ class DisksMonitor:
             result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding).strip().split("\n")
             if result:
                 all_disks = [[line.split()[0], line.split()[2]] for line in result if line.strip()]
-                self.disks = {f"{disk[0]}": Disk(disk) for disk in all_disks}
-            print("от smartctl")
-            for i in self.disks.keys():
-                print(i)
-        except:
-            print(f"Ошибка выполнения команды {command}")
+                for disk in all_disks:
+                    self.disks[disk[0]] = Disk(disk)
+                    disk_index = self.__replace_device_name(disk[0], True)
+                    self.disks_info[disk[0]] = f"disk:{disk_index}"
+        except Exception as e:
+            print(f"Ошибка выполнения команды {command}: {e}")
 
     def update(self):
         disks_speed = self.__get_disks_rw_speed()
-        print("от iostat")
-        for i in disks_speed.keys():
-            print(i)
-
-        for disk_key in self.disks.keys():
-            print("Обновление ",disk_key)
-            self.disks[disk_key].update(disks_speed[disk_key])
+        for key, disk in self.disks.items():
+            disk.update(disks_speed[key])
 
     def get_all(self):
-        for disk in self.disks:
-            print(f"Параметры {disk}:")
-            aaa = self.disks[disk].get_params_all()
-            print(aaa)
+        return [{index: gpu.get_params_all()} for index, gpu in self.disks.items()]
+
+    def get_item_and_metric(self, item_id: str, metric_id: str):
+        try:
+            return self.item_index.get(item_id).get_metric(metric_id)
+        except Exception as e:
+            print(f"Ошибка - {item_id}: {metric_id} - {e}")
+            return None
+
+    def create_index(self, disk_dict: dict):
+        for index in disk_dict:
+            if disk_dict[index] is not None:
+                for key, value in self.disks_info.items():
+                    if value == index:
+                        self.item_index[str(disk_dict[index])] = self.disks.get(key, None)
+                        break
+                else:
+                    print(f'Для индекса {index} нет значения')
+        print("Индексы для дисков обновлены")
+
+    def get_objects_description(self):
+        return self.disks_info
 
     @staticmethod
-    def __replace_device_name(index):
-        letters = []
-        while index >= 0:
-            letters.append(chr(ord('a') + (index % 26)))
-            index = (index // 26) - 1
-        return f"/dev/sd{''.join(reversed(letters))}"
+    def __replace_device_name(index_or_name, reverse=False):
+        if reverse:
+            # Ожидаем имя устройства, например: "/dev/sdab"
+            name = index_or_name
+            if not name.startswith("/dev/sd"):
+                return None
+            suffix = name[7:]  # удаляем "/dev/sd"
+            result = 0
+            for char in suffix:
+                result = result * 26 + (ord(char) - ord('a') + 1)
+            return str(result - 1)
+        else:
+            # Ожидаем индекс, например: 27
+            index = index_or_name
+            if index < 0:
+                return None
+            letters = []
+            while index >= 0:
+                letters.append(chr(ord('a') + (index % 26)))
+                index = (index // 26) - 1
+            return f"/dev/sd{''.join(reversed(letters))}"
 
     def __get_disks_rw_speed(self):
         if self.system == "Windows":
@@ -78,18 +110,17 @@ class DisksMonitor:
                         disk_speeds[disk_name] = {"read": float(read_speed), "write": float(write_speed)}
                     except ValueError:
                         disk_speeds[disk_name] = {"read": None, "write": None}
-
             return disk_speeds
-
         except Exception as e:
             print(f"Ошибка при получении данных о скорости дисков в Windows: {e}")
             return {}
 
-    def __get_linux_disk_speed(self):
+    @staticmethod
+    def __get_linux_disk_speed():
         """Получает скорость чтения и записи дисков в Linux с помощью iostat."""
         try:
             result = subprocess.run(["iostat", "-d", "-k", "1", "2"],
-                capture_output=True, text=True, check=True)
+                                    capture_output=True, text=True, check=True)
             lines = result.stdout.strip().split("\n")
             disk_speeds = {}
             for line in reversed(lines):
@@ -118,8 +149,9 @@ class DisksMonitor:
             return {}
 
 
-class Disk:
+class Disk(SubObject):
     def __init__(self, disk_indo: list):
+        super().__init__()
         self.name = disk_indo[0]
         self.interface_type = disk_indo[1]
         self.params = {
@@ -134,9 +166,7 @@ class Disk:
         self.system = platform.system()
 
     def update(self, disks_speed):
-        result = {}
-        result["disk.write.bytes.per.sec"] = disks_speed["write"]
-        result["disk.read.bytes.per.sec"] = disks_speed["read"]
+        result = {"disk.write.bytes.per.sec": disks_speed["write"], "disk.read.bytes.per.sec": disks_speed["read"]}
 
         if self.system == "Windows":
             command = ['smartctl', '-A', '-j', '-d', self.interface_type, self.name]
@@ -148,9 +178,6 @@ class Disk:
             if not output:
                 return
             data = json.loads(output)
-            # with open(f"{self.name[-3:]}.json", "w") as f:
-            #     json.dump(data, f, indent=4, ensure_ascii=False)
-            #     print(f"{self.name[-3:]}.json")
         except Exception as e:
             print(f"Ошибка вызова команды {command} - {e}")
             return
@@ -196,7 +223,12 @@ class Disk:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["disk.read.bytes.per.sec", "disk.write.bytes.per.sec"]:
+                        result = self.validate_value("double", result)
+                    else:
+                        result = self.validate_value("integer", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

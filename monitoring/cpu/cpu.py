@@ -4,8 +4,10 @@ import subprocess
 import platform
 import ctypes
 from ctypes import wintypes, byref, POINTER, cast
+from base import BaseObject
+from base import SubObject
 
-class CPUsMonitor:
+class CPUsMonitor(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -25,6 +27,7 @@ class CPUsMonitor:
                                 '13': <__main__.Core object at 0x79853a654d60>}
             system (str): Название операционной системы (например, 'Linux').
         """
+        super().__init__()
         self.cores = {}
         self.cores_info = {}
         self.item_index = {}
@@ -314,8 +317,9 @@ class CPUsMonitor:
             print(f"Ошибка - {core}: {metric_id} - {e}")
             return None
 
-class Core:
+class Core(SubObject):
     def __init__(self):
+        super().__init__()
         self.system = platform.system()
         self.params = {
             'core.user.time': None,
@@ -327,7 +331,7 @@ class Core:
             'core.load': None
         }
 
-    def update(self, update_line):
+    def update(self, update_line=None):
         params_new = {}
         if self.system == 'Linux':
             params_new = {
@@ -358,7 +362,9 @@ class Core:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    result = self.validate_value("double", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

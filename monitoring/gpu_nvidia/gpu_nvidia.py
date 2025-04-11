@@ -1,6 +1,8 @@
 import subprocess
+from base import BaseObject
+from base import SubObject
 
-class GPUsMonitor:
+class GPUsMonitor(BaseObject):
     def __init__(self):
         """
         Инициализация экземпляра класса.
@@ -16,6 +18,7 @@ class GPUsMonitor:
                         а значением - ссылка на объект класса GPU.
                         Пример: {'122': <__main__.GPU object at 0x74fefb6cea30>}
         """
+        super().__init__()
         self.gpus = {}
         self.gpus_info = {}
         self.item_index = {}
@@ -51,13 +54,6 @@ class GPUsMonitor:
                 print(f'Для индекса {index} нет значения')
         print("Индексы для GPU обновлены")
 
-    @staticmethod
-    def __validate_value_int(value):
-        if value.isdigit():
-            return value
-        else:
-            return None
-
     def update(self):
         try:
             result = subprocess.run(
@@ -77,16 +73,16 @@ class GPUsMonitor:
                 values[index] = values[index].strip()
             if values[1] in self.gpus:
                 result_line = {
-                    "gpu.index": self.__validate_value_int(values[0]),
+                    "gpu.index": values[0],
                     "gpu.uuid": values[1],
                     "gpu.name": values[2],
-                    "gpu.clocks.current.graphics": self.__validate_value_int(values[3]),
-                    "gpu.clocks.current.memory": self.__validate_value_int(values[4]),
-                    "gpu.utilization.gpu": self.__validate_value_int(values[5]),
-                    "gpu.utilization.memory": self.__validate_value_int(values[6]),
-                    "gpu.memory.used": self.__validate_value_int(values[7]),
-                    "gpu.fan.speed": self.__validate_value_int(values[8]),
-                    "gpu.temperature.gpu": self.__validate_value_int(values[9])
+                    "gpu.clocks.current.graphics": values[3],
+                    "gpu.clocks.current.memory": values[4],
+                    "gpu.utilization.gpu": values[5],
+                    "gpu.utilization.memory": values[6],
+                    "gpu.memory.used": values[7],
+                    "gpu.fan.speed": values[8],
+                    "gpu.temperature.gpu": values[9]
                 }
                 self.gpus.get(values[1]).update(result_line)
             else:
@@ -103,8 +99,8 @@ class GPUsMonitor:
     def get_item_and_metric(self, item_id: str, metric_id:str):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
-        except:
-            print(f"ошибка - {item_id}: {metric_id}")
+        except Exception as e:
+            print(f"Ошибка - {item_id}: {metric_id} - {e}")
             return None
 
     def get_item_origin(self, uuid_gpu: str, metric_id:str):
@@ -114,8 +110,9 @@ class GPUsMonitor:
             print(f"ошибка - {uuid_gpu}: {metric_id}")
             return None
 
-class GPU:
+class GPU(SubObject):
     def __init__(self, uuid_gpu: str):
+        super().__init__()
         self.params = {
             "gpu.index": None,
             "gpu.uuid": uuid_gpu,
@@ -129,7 +126,7 @@ class GPU:
             "gpu.temperature.gpu": None
         }
 
-    def update(self, params_new: dict):
+    def update(self, params_new: dict=None):
         self.params.update(params_new)
 
     def get_params_all(self):
@@ -139,7 +136,13 @@ class GPU:
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["gpu.index", "gpu.clocks.current.graphics", "gpu.clocks.current.memory", "gpu.utilization.gpu",
+                                     "gpu.utilization.memory", "gpu.memory.used", "gpu.fan.speed", "gpu.temperature.gpu"]:
+                        result = self.validate_value("integer", result)
+                    else:
+                        result = self.validate_value("string", result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

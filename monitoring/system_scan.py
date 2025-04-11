@@ -22,7 +22,7 @@ def get_disks():
     disks = []
     try:
         result = subprocess.run(["smartctl", "--scan"], capture_output=True, text=True)
-        for line in result.stdout.strip().splitlines():
+        for line in result.stdout.strip().splitlines():  
             match = re.search(r"(/dev/\S+|\S+:\s+)", line)
             if match:
                 device = match.group(1).strip()
