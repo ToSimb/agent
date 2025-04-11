@@ -33,7 +33,7 @@ class FreonB(BaseObject):
 
                                         192.168.0.60:board:5:T:0': 'fb:3:20:board:5:T:0', ...
 
-                                        'agent_connection': 'fb:agent_connection'}
+                                        'connection': 'fb:connection'}
             item_index: Словарь, где ключ - это будущий item_id из схемы,
                         а значением - объект класса Vu_fb(Board_fb, Unit_T,...).
                         (по факту мы делаем новые ссылки на объекты)
@@ -43,7 +43,7 @@ class FreonB(BaseObject):
 
                                      '1121': <__main__.Unit_T object at 0x7162191d5640>, ..
 
-                                     '1110': self.agent_connection }
+                                     '1110': self.connection }
         """
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -52,7 +52,7 @@ class FreonB(BaseObject):
         self.vus_info = {}
         self.item_index = {}
         self.conn = False
-        self.agent_connection = -1
+        self.connection = -1
         fb = self.__send_req()
         if fb is not None:
             self.conn = True
@@ -77,22 +77,19 @@ class FreonB(BaseObject):
         if file_dict is not None:
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
-                    self.vus_info[index_vu] = f"fb:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}"
+                    path_id = f"fb:{int(file_dict[index_vu]['x'])-1}:{int(file_dict[index_vu]['y'])-1}"
+                    self.vus_info[index_vu] = path_id
                     for index in range(COUNT_BOARDS):
-                        self.vus_info[f"{index_vu}:board:{index}"] = \
-                            f"fb:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:board:{index}"
+                        self.vus_info[f"{index_vu}:board:{index}"] = f"{path_id}:board:{index}"
                         for index_T in range(COUNT_SENSOR_T):
-                            self.vus_info[f"{index_vu}:board:{index}:T:{index_T}"] = \
-                                f"fb:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:board:{index}:T:{index_T}"
+                            self.vus_info[f"{index_vu}:board:{index}:T:{index_T}"] = f"{path_id}:board:{index}:T:{index_T}"
                         for index_U in range(COUNT_SENSOR_U):
-                            self.vus_info[f"{index_vu}:board:{index}:U:{index_U}"] = \
-                                f"fb:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:board:{index}:U:{index_U}"
+                            self.vus_info[f"{index_vu}:board:{index}:U:{index_U}"] = f"{path_id}:board:{index}:U:{index_U}"
                         for index_I in range(COUNT_SENSOR_I):
-                            self.vus_info[f"{index_vu}:board:{index}:I:{index_I}"] = \
-                                f"fb:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:board:{index}:I:{index_I}"
+                            self.vus_info[f"{index_vu}:board:{index}:I:{index_I}"] = f"{path_id}:board:{index}:I:{index_I}"
                 else:
                     print(f"ERROR: нет {index_vu} в списке объектов!")
-            self.vus_info['agent_connection'] = 'fb:agent_connection'
+            self.vus_info['connection'] = 'fb:connection'
         else:
             print("файл пустой")
 
@@ -130,13 +127,13 @@ class FreonB(BaseObject):
                 'fb:3:20': 1212,
                 'fb:3:20:board:0': 1213, ...
                 'fb:3:20:board:5:T:0': 1222, ..
-                'agent_connection': 1200
+                'fb:connection': 1200
             }
         """
         for index in fb_dict:
             if fb_dict[index] is not None:
-                if index == "agent_connection":
-                    self.agent_connection = fb_dict[index]
+                if index == "connection":
+                    self.connection = fb_dict[index]
                 else:
                     for key, value in self.vus_info.items():
                         if value == index:
@@ -159,7 +156,7 @@ class FreonB(BaseObject):
 
     def get_all(self):
         """
-            Возвращает все параметры, кроме agent_connection
+            Возвращает все параметры, кроме connection
         """
         return_list = []
         for vu in self.vus.keys():
@@ -169,8 +166,8 @@ class FreonB(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id in str(self.agent_connection):
-                if metric_id == "agent_connection":
+            if item_id in str(self.connection):
+                if metric_id == "connection.state":
                     return self.conn
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:

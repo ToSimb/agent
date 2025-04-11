@@ -12,7 +12,7 @@ from logger.logger_rest_client import logger_rest_client
 
 def open_file(file_path):
     try:
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             content = json.load(file)
             return content
     except FileNotFoundError:
@@ -55,7 +55,7 @@ def verification_data(params):
     for item in params:
         item_dict = json.loads(item[1])
         t = item_dict['t']
-        if t < current_time - 1000:
+        if t < current_time - RETENTION_TIME_S:
             ids_delete_list.append(item[0])
     return ids_delete_list
 
@@ -68,7 +68,8 @@ def transform_data(params):
         ids_list.append(item[0])
         item_id = item_dict['item_id']
         metric_id = item_dict['metric_id']
-        v = item_dict['v']
+        v = str(item_dict['v'])
+        v = v.replace(',', '.')
         comment = item_dict.get('comment')
         etmax = item_dict.get('etmax')
         etmin = item_dict.get('etmin')
@@ -109,3 +110,21 @@ def filter_for_mil(file_name_agent_reg_response, result_response):
 
     return result
 
+def compare_full_paths(scheme_data, agent_reg_response_data):
+    scheme_paths = set(item['full_path'] for item in scheme_data['scheme']['item_id_list'])
+    registration_paths = set(item['full_path'] for item in agent_reg_response_data['item_id_list'])
+
+    only_in_scheme = scheme_paths - registration_paths
+    only_in_registration = registration_paths - scheme_paths
+
+    if only_in_scheme:
+        print("Есть в agent_scheme, но нет в registration:")
+        for path in sorted(only_in_scheme):
+            print(f"  {path}")
+
+    if only_in_registration:
+        print("Есть в agent_reg_response, но нет в scheme:")
+        for path in sorted(only_in_registration):
+            print(f"  {path}")
+
+    return bool(only_in_scheme or only_in_registration)

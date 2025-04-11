@@ -94,6 +94,7 @@ def main():
         templates_data = load_json_file(templates_path)
         metrics_data = load_json_file(metrics_path)
 
+        filtered_metrics = []
         filtered_metrics = filter_metrics_by_templates(templates_data, metrics_data)
         template_dict = build_template_dict(templates_data["templates"])
 

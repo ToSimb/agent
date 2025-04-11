@@ -27,7 +27,7 @@ class FreonA(BaseObject):
 
                                         192.168.87.24:T:0': 'fa:1:2:T:0', ...
 
-                                        'agent_connection': 'fa:agent_connection'}
+                                        'connection': 'fa:connection'}
             item_index: Словарь, где ключ - это будущий item_id из схемы,
                         а значением - объект класса Board_f_a(Unit_T,...).
                         (по факту мы делаем новые ссылки на объекты)
@@ -36,7 +36,7 @@ class FreonA(BaseObject):
 
                                      '1121':
 
-                                     '1110': self.agent_connection }
+                                     '1110': self.connection }
         """
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +44,7 @@ class FreonA(BaseObject):
         self.vus = {}
         self.vus_info = {}
         self.conn = False
-        self.agent_connection = -1
+        self.connection = -1
         self.item_index = {}
         fa = self.__send_req()
         if fa is not None:
@@ -67,23 +67,43 @@ class FreonA(BaseObject):
         if file_dict is not None:
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
-                    self.vus_info[index_vu] = f"fa:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}"
+                    path = f"fa:{file_dict[index_vu]['x']-1}:{self.__get_address_full_board(int(file_dict[index_vu]['y']))}"
+                    self.vus_info[index_vu] = path
                     for index in range(6):
-                        self.vus_info[f"{[index_vu][0]}:T:{index}"] = \
-                            f"fa:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:T:{index}"
+                        self.vus_info[f"{[index_vu][0]}:T:{index}"] = f"{path}:T:{index}"
                     for index in range(6):
-                        self.vus_info[f"{[index_vu][0]}:U:{index}"] = \
-                            f"fa:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:U:{index}"
+                        self.vus_info[f"{[index_vu][0]}:U:{index}"] = f"{path}:U:{index}"
                     for index in range(6):
-                        self.vus_info[f"{[index_vu][0]}:I:{index}"] = \
-                            f"fa:{file_dict[index_vu]['x']}:{file_dict[index_vu]['y']}:I:{index}"
+                        self.vus_info[f"{[index_vu][0]}:I:{index}"] = f"{path}:I:{index}"
                 else:
                     print(f"ERROR: нет {index_vu} в списке объектов!")
-            self.vus_info['agent_connection'] = 'fa:agent_connection'
+            self.vus_info['connection'] = 'fa:connection'
         else:
             print("файл пустой")
         if (len(self.vus)+1) == len(self.vus_info):
             print("ВСЕ ОБЪЕКТЫ СОЗДАНЫ")
+
+    @staticmethod
+    def __get_address_full_board(index):
+        replacement_str_map = {
+            1: '0:0',
+            3: '0:1',
+            2: '1:0',
+            4: '1:1',
+            5: '2:0',
+            7: '2:1',
+            6: '3:0',
+            8: '3:1',
+            9: '4:0',
+            11: '4:1',
+            10: '5:0',
+            12: '5:1',
+            13: '6:0',
+            15: '6:1',
+            14: '7:0',
+            16: '7:1',
+        }
+        return replacement_str_map.get(index)
 
     @staticmethod
     def __open_dict(file_name):
@@ -115,13 +135,15 @@ class FreonA(BaseObject):
                 'fa:31:1': 1212,
                 'fa:31:2': 1213, ...
                 'fa:38:16:I:2': 1222, ..
-                'agent_connection': 1200
+                'fa:connection': 1200
             }
         """
         for index in fa_dict:
             if fa_dict[index] is not None:
-                if index == "agent_connection":
-                    self.agent_connection = fa_dict[index]
+                if index == "fa:connection":
+                    self.connection = fa_dict[index]
+                elif index == "connection":
+                    self.connection = fa_dict[index]
                 else:
                     for key, value in self.vus_info.items():
                         if value == index:
@@ -133,6 +155,7 @@ class FreonA(BaseObject):
 
     def update(self):
         fa = self.__send_req()
+        print("update FA")
         if fa is not None:
             self.conn = True
             print("update")
@@ -144,7 +167,7 @@ class FreonA(BaseObject):
 
     def get_all(self):
         """
-            Возвращает все параметры, кроме agent_connection
+            Возвращает все параметры, кроме connection
         """
         return_list = []
         for vu in self.vus.keys():
@@ -154,8 +177,8 @@ class FreonA(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id in str(self.agent_connection):
-                if metric_id == "agent_connection":
+            if item_id in str(self.connection):
+                if metric_id == "connection.state":
                     return self.conn
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
