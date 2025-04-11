@@ -1,8 +1,8 @@
 import json
 from pysnmp.hlapi import SnmpEngine, CommunityData, UdpTransportTarget, ContextData
 from pysnmp.hlapi import ObjectType, ObjectIdentity, nextCmd, getCmd
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 
 class Switch(BaseObject):

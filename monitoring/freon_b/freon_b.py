@@ -1,8 +1,8 @@
 import requests
 import json
 import os
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 URL = f"http://127.0.0.1:8080/freon/25_2"
 # URL = f"http://192.168.123.61:9002/api/v1/system"

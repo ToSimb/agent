@@ -14,6 +14,9 @@ from monitoring.service import (create_index_for_any,
 from monitoring.system.system import SystemMonitor
 from monitoring.cpu.cpu import CPUsMonitor
 from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+from monitoring.lvol.lvol import LvolsMonitor
+from monitoring.disk.disk import DisksMonitor
+from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB
 from storage.sqlite_commands import (create_connection,
@@ -45,15 +48,30 @@ monitor_configs = [
         'settings_file': 'monitoring/_settings_file/gpu_proc.txt',
     },
     {
-        'name': 'f_a',
-        'monitor_class': FreonA,
-        'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+        'name': 'lvol',
+        'monitor_class': LvolsMonitor,
+        'settings_file': 'monitoring/_settings_file/lvol_proc.txt',
     },
     {
-        'name': 'f_b',
-        'monitor_class': FreonB,
-        'settings_file': 'monitoring/_settings_file/f_b_proc.txt',
-    }
+        'name': 'disk',
+        'monitor_class': DisksMonitor,
+        'settings_file': 'monitoring/_settings_file/disk_proc.txt',
+    },
+    {
+        'name': 'if',
+        'monitor_class': EthPortMonitor,
+        'settings_file': 'monitoring/_settings_file/if_proc.txt',
+    },
+    # {
+    #     'name': 'f_a',
+    #     'monitor_class': FreonA,
+    #     'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+    # },
+    # {
+    #     'name': 'f_b',
+    #     'monitor_class': FreonB,
+    #     'settings_file': 'monitoring/_settings_file/f_b_proc.txt',
+    # }
 ]
 # ___________________________________
 

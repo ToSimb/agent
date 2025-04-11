@@ -45,6 +45,7 @@ def crate_items_agent_reg_response():
 
 def create_index_for_any(items_agent_reg_response, file_name, object_monitor):
     file_index = open_file(file_name)
+    print(file_index)
     index_dict = {}
 
     index_list = []

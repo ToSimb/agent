@@ -1,6 +1,6 @@
 import time
 import psutil
-from base import BaseObject
+from monitoring.base import BaseObject
 
 
 class SystemMonitor(BaseObject):

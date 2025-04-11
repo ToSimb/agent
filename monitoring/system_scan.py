@@ -136,6 +136,32 @@ def get_network_interfaces():
         print(f"error: {e}")
     return interfaces
 
+def get_mounted_lvm_volumes():
+    """
+    Получает информацию о смонтированных логических томах (если они есть) через psutil.
+    """
+    lvols = []
+    try:
+        partitions = psutil.disk_partitions()
+        ignore_words = ['loop', 'snap', 'var/snap', 'docker', 'mnt', 'media']
+        filtered = [
+            p for p in partitions
+            if not any(word in p.mountpoint for word in ignore_words)
+        ]
+        for part in filtered:
+            # print(part)
+            usage = psutil.disk_usage(part.mountpoint)
+            lvols.append({
+                "device": part.device,
+                "mountpoint": part.mountpoint,
+                "fstype": part.fstype,
+                "total": usage.total,
+                "used": usage.used,
+                "free": usage.free,
+            })
+    except Exception as e:
+        print(f"error: {e}")
+    return lvols
 
 def collect_device_info():
     """
@@ -145,7 +171,8 @@ def collect_device_info():
         "disk": get_disks(),
         "gpu": get_gpu(),
         "cpu": get_cpu(),
-        "interface": get_network_interfaces()
+        "interface": get_network_interfaces(),
+        "lvol": get_mounted_lvm_volumes()
     }
 
 

@@ -6,6 +6,7 @@ from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
+from monitoring.disk.disk import DisksMonitor
 from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB
 
@@ -45,7 +46,10 @@ def monitor_start(monitor_class, tag):
     for index_cpu in objects_descr:
         objects_key[objects_descr[index_cpu]] = None
 
-    if compare_interface_keys(tag, objects_key_old, objects_key):
+    if objects_key_old is not None:
+        if compare_interface_keys(tag, objects_key_old, objects_key):
+            PEREDELAY.append(tag)
+    else:
         PEREDELAY.append(tag)
 
     save_file_data(settings_file, objects_key)
@@ -65,13 +69,14 @@ def monitor_start(monitor_class, tag):
 def main():
     logger_monitoring.info("- - -" * 10)
     monitors = [
-        # (CPUsMonitor, 'cpu'),
-        # (GPUsMonitor, 'gpu'),
-        # (SystemMonitor, 'system'),
-        # (LvolsMonitor, 'lvol'),
-        # (EthPortMonitor, 'eth_port'),
+        (CPUsMonitor, 'cpu'),
+        (GPUsMonitor, 'gpu'),
+        (SystemMonitor, 'system'),
+        (LvolsMonitor, 'lvol'),
+        (DisksMonitor, 'disk'),
+        (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
-        (FreonB, 'f_b')
+        # (FreonB, 'f_b')
     ]
     for monitor_class, tag in monitors:
         monitor_start(monitor_class, tag)

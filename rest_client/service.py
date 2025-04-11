@@ -69,7 +69,7 @@ def transform_data(params):
         item_id = item_dict['item_id']
         metric_id = item_dict['metric_id']
         v = str(item_dict['v'])
-        v = v.replace(',', '.')
+        # v = v.replace(',', '.')
         comment = item_dict.get('comment')
         etmax = item_dict.get('etmax')
         etmin = item_dict.get('etmin')

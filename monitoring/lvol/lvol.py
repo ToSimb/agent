@@ -1,6 +1,6 @@
 import psutil
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 class LvolsMonitor(BaseObject):
     def __init__(self):
@@ -114,10 +114,10 @@ class Lvol(SubObject):
             if metric_id in self.params:
                 result = self.params[metric_id]
                 if result is not None:
-                    self.params[metric_id] = None
                     if metric_id in ["lvol.part.mountpoint"]:
                         result = self.validate_value("string", result)
                     else:
+                        self.params[metric_id] = None
                         result = self.validate_value("integer", result)
                 return result
             else:

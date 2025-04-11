@@ -1,6 +1,6 @@
 import subprocess
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 class GPUsMonitor(BaseObject):
     def __init__(self):
