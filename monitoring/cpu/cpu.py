@@ -4,8 +4,8 @@ import subprocess
 import platform
 import ctypes
 from ctypes import wintypes, byref, POINTER, cast
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 class CPUsMonitor(BaseObject):
     def __init__(self):
@@ -310,12 +310,12 @@ class CPUsMonitor(BaseObject):
             print(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
 
-    def get_item_origin(self, core: str, metric_id: str):
-        try:
-            return self.cores.get(core).get_metric(metric_id)
-        except Exception as e:
-            print(f"Ошибка - {core}: {metric_id} - {e}")
-            return None
+    # def get_item_origin(self, core: str, metric_id: str):
+    #     try:
+    #         return self.cores.get(core).get_metric(metric_id)
+    #     except Exception as e:
+    #         print(f"Ошибка - {core}: {metric_id} - {e}")
+    #         return None
 
 class Core(SubObject):
     def __init__(self):

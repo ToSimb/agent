@@ -3,8 +3,8 @@ import platform
 import subprocess
 import shutil
 import json
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 
 class DisksMonitor(BaseObject):

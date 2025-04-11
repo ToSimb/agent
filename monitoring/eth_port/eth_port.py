@@ -1,7 +1,7 @@
 import psutil
 import time
-from base import BaseObject
-from base import SubObject
+from monitoring.base import BaseObject
+from monitoring.base import SubObject
 
 INTERVAL = 0.5
 

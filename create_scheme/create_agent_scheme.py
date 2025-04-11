@@ -89,7 +89,7 @@ def find_root_templates(templates_data):
 def main():
     try:
         templates_path = 'templates.json'
-        metrics_path = 'metrics.json'
+        metrics_path = 'metric_new.json'
 
         templates_data = load_json_file(templates_path)
         metrics_data = load_json_file(metrics_path)
