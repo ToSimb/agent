@@ -1,4 +1,5 @@
 import json
+import random
 import time
 import os
 import math
@@ -28,16 +29,6 @@ def open_file(file_name):
         print(f"Файл {file_name} не найден.")
         return None
 
-def save_file(file_name, any_objects):
-    if not os.path.isfile(file_name):
-        with open(file_name, 'w', encoding='utf-8') as file:
-            file_return = {}
-            for index_cpu in any_objects:
-                file_return[any_objects[index_cpu]] = None
-            json.dump(file_return, file, ensure_ascii=False, indent=4)
-            return True
-    return False
-
 def save_file_data(file_name, any_objects):
     with open(file_name, 'w', encoding='utf-8') as file:
         # Предполагаем, что any_objects - это список
@@ -51,17 +42,21 @@ def crate_items_agent_reg_response():
     for item in agent_reg_response.get('item_id_list'):
         items_agent_reg_response[item.get('full_path')] = item.get('item_id')
     return items_agent_reg_response
+
 def create_index_for_any(items_agent_reg_response, file_name, object_monitor):
     file_index = open_file(file_name)
+    index_dict = {}
+
     index_list = []
 
     for item_key, item_data in file_index.items():
         if item_data in items_agent_reg_response:
-            file_index[item_key] = items_agent_reg_response[item_data]
+            index_dict[item_key] = items_agent_reg_response[item_data]
 
-    object_monitor.create_index(file_index)
-    for line, value in file_index.items():
-        index_list.append(value)
+    object_monitor.create_index(index_dict)
+    for line, value in index_dict.items():
+        if value is not None:
+            index_list.append(value)
 
     return index_list
 

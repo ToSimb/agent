@@ -14,6 +14,8 @@ from monitoring.service import (create_index_for_any,
 from monitoring.system.system import SystemMonitor
 from monitoring.cpu.cpu import CPUsMonitor
 from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+from monitoring.freon_a.freon_a import FreonA
+from monitoring.freon_b.freon_b import FreonB
 from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      insert_params)
@@ -41,6 +43,16 @@ monitor_configs = [
         'name': 'gpu',
         'monitor_class': GPUsMonitor,
         'settings_file': 'monitoring/_settings_file/gpu_proc.txt',
+    },
+    {
+        'name': 'f_a',
+        'monitor_class': FreonA,
+        'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+    },
+    {
+        'name': 'f_b',
+        'monitor_class': FreonB,
+        'settings_file': 'monitoring/_settings_file/f_b_proc.txt',
     }
 ]
 # ___________________________________
@@ -140,12 +152,12 @@ def main():
                                          'metric_id': metric_id,
                                          't': time_index,
                                          'v': pf})
-                            #     else:
-                            #         print(time.time(), "не собрано", item_id, metric_id, pf, "!!!!!!!!!!!!!!!1")
+                                # else:
+                                #     print(time.time(), "не собрано", item_id, metric_id, pf, "!!!!!!!!!!!!!!!1")
                             # else:
                             #     print(f"_________________________________________ {item_id} NOTNOT")
-                else:
-                    print(f"0: {data}")
+                # else:
+                #     print(f"0: {data}")
 
             time_1 = time.time()
             insert_params(CONN, params)

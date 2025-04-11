@@ -111,7 +111,7 @@ class EthPort:
         }
 
     def update(self, first_stats_eth_port, second_stats_eth_port):
-        in_speed = round(float(second_stats_eth_port.bytes_recv - first_stats_eth_port.bytes_sent) / INTERVAL, 2)
+        in_speed = round(float(second_stats_eth_port.bytes_recv - first_stats_eth_port.bytes_recv) / INTERVAL, 2)
         out_speed = round(float(second_stats_eth_port.bytes_sent - first_stats_eth_port.bytes_sent) / INTERVAL, 2)
 
         if self.max_bandwidth is None:

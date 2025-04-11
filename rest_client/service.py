@@ -12,7 +12,7 @@ from logger.logger_rest_client import logger_rest_client
 
 def open_file(file_path):
     try:
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             content = json.load(file)
             return content
     except FileNotFoundError:
