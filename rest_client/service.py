@@ -44,10 +44,12 @@ def collecting_params(CONN):
             if len(ids_delete_list) > 0:
                 count_delete = delete_params(CONN, ids_delete_list)
                 logger_rest_client.info(f"DB: Удаленно {count_delete} устаревших данных!!!")
+                return [], [], count_delete
             else:
-                return transform_data(params)
+                ids_list, value = transform_data(params)
+                return ids_list, value, 0
         else:
-            return [], []
+            return [], [], 0
 
 def verification_data(params):
     ids_delete_list = []

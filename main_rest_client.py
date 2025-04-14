@@ -27,7 +27,8 @@ from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      create_table,
                                      clear_table,
-                                     delete_params)
+                                     delete_params,
+                                     vacuum_db)
 from storage.settings_handler import (check_settings,
                                       update_settings,
                                       get_settings)
@@ -40,6 +41,7 @@ if DEBUG_MODE:
 
 AGENT_ID = -1
 USER_QUERY_INTERVAL_REVISION = 0
+stop_event = threading.Event()
 
 if not check_db():
     if create_table():
@@ -65,6 +67,9 @@ def cleanup_and_exit():
         update_settings(AGENT_ID, USER_QUERY_INTERVAL_REVISION, False)
     except Exception as e:
         logger_rest_client.warning(f"Не удалось обновить настройки при завершении: {e}")
+
+    stop_event.set()
+    check_thread.join(timeout=5)
 
     if CONN:
         CONN.close()
@@ -116,7 +121,7 @@ def registration_agent(agent_data, agent_reg_response):
             sys.exit(1)
 
 def check_server():
-    while True:
+    while not stop_event.is_set():
         try:
             global AGENT_ID
             global USER_QUERY_INTERVAL_REVISION
@@ -142,6 +147,7 @@ def check_server():
         except Exception as e:
             logger_rest_client.error(f"CHECK ERROR: {e}")
         time.sleep(CHECK_SURVEY_PERIOD)
+    logger_rest_client.info(f"Поток отвечающий за check завершился")
 
 def post_params_server(AGENT_ID, result):
     while True:
@@ -231,12 +237,15 @@ try:
 
     # создания потока который будет производить чек сервера
     check_thread = threading.Thread(target=check_server)
-    check_thread.daemon = True
     check_thread.start()
+
+    last_vacuum_time = 0
+    VACUUM_INTERVAL = 7200  # раз в 2 часа
 
     # основной цикл передачи ПФ
     while True:
-        ids_list, value = collecting_params(CONN)
+        ids_list, value, stale_deleted = collecting_params(CONN)
+        count_delete = 0
         if len(value) > 0:
             result = {
                 "scheme_revision": agent_scheme["scheme_revision"],
@@ -248,6 +257,13 @@ try:
                 logger_rest_client.info(f"DB: Удаленно {count_delete} отправленных данных")
         else:
             logger_rest_client.info("Нет данных в БД")
+
+        total_deleted = count_delete + stale_deleted
+        current_time = time.time()
+        if total_deleted > 0 and current_time - last_vacuum_time > VACUUM_INTERVAL:
+            vacuum_db(CONN)
+            last_vacuum_time = current_time
+            print(f"VACUUM БД прошел за {time.time() - current_time} секунд")
         time.sleep(PARAMS_SURVEY_PERIOD)
 
 except Exception as e:
@@ -258,6 +274,8 @@ except Exception as e:
         logger_rest_client.warning(f"Не удалось обновить настройки при завершении: {e}")
 
 finally:
+    stop_event.set()
+    check_thread.join(timeout=5)
     if CONN is not None:
         CONN.close()
     try:

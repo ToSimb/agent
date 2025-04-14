@@ -3,6 +3,9 @@ import sqlite3
 import json
 from sqlite3 import Error
 
+from logger.logger_rest_client import logger_rest_client
+from logger.logger_monitoring import logger_monitoring
+
 db_file = "storage/my_database.db"
 
 def check_db():
@@ -33,10 +36,10 @@ def create_table():
             return True
         except Error as e:
             conn.close()
-            print(f"Ошибка создания таблицы: {e}")
+            logger_rest_client.info(f"Ошибка создания таблицы: {e}")
             return False
     else:
-        print("Ошибка подключения к базе данных.")
+        logger_rest_client.error("Ошибка подключения к базе данных.")
         return False
 
 def clear_table():
@@ -53,10 +56,10 @@ def clear_table():
             return True
         except Error as e:
             conn.close()
-            print(f"Ошибка при очистки таблицы: {e}")
+            logger_rest_client.error(f"Ошибка при очистки таблицы: {e}")
             return False
     else:
-        print("Ошибка подключения к базе данных.")
+        logger_rest_client.error("Ошибка подключения к базе данных.")
         return False
 
 def insert_params(conn, json_array):
@@ -69,7 +72,7 @@ def insert_params(conn, json_array):
         return True
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка вставки данных: {e}")
+        logger_monitoring.error(f"Ошибка вставки данных: {e}")
         return False
 
 def select_params(conn, n):
@@ -81,7 +84,7 @@ def select_params(conn, n):
         return rows
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка извлечения данных: {e}")
+        logger_rest_client.error(f"Ошибка извлечения данных: {e}")
         return None
 
 def delete_params(conn, ids_list_delete):
@@ -93,8 +96,19 @@ def delete_params(conn, ids_list_delete):
         count_rows = cursor.rowcount
         conn.commit()
         cursor.close()
-        print(f"Удалено {count_rows} записей.")
+        logger_rest_client.info(f"Удалено {count_rows} записей.")
         return count_rows
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка удаления данных: {e}")
+        logger_rest_client.error(f"Ошибка удаления данных: {e}")
+
+def vacuum_db(conn):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("VACUUM")
+        conn.commit()
+        cursor.close()
+        logger_rest_client.info("База данных оптимизирована (VACUUM).")
+    except Exception as e:
+        conn.rollback()
+        logger_rest_client.error(f"Ошибка при выполнении VACUUM: {e}")
