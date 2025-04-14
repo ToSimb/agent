@@ -2,6 +2,8 @@ import sys
 import threading
 import json
 import time
+import signal
+import atexit
 
 from monitoring.service import (create_index_for_any,
                                 get_metrics_polling_plan,
@@ -27,7 +29,33 @@ from storage.settings_handler import (get_file_mtime,
 from logger.logger_monitoring import logger_monitoring
 from config import (DEBUG_MODE)
 
+
+def signal_handler(sig, frame):
+    logger_monitoring.info(f"Получен сигнал завершения: {sig}")
+    cleanup_and_exit()
+
+def cleanup_and_exit():
+    logger_monitoring.info("Завершение приложения...")
+    stop_event.set()
+
+    for thread in threading.enumerate():
+        if thread.name.endswith('_update') and thread.is_alive():
+            logger_monitoring.info(f"Ожидание завершения потока {thread.name}...")
+            thread.join(timeout=5)
+
+    if CONN:
+        CONN.close()
+        logger_monitoring.info("Соединение с БД закрыто.")
+
+    logger_monitoring.info("Программа завершена.")
+    sys.exit(0)
+
 stop_event = threading.Event()
+CONN = None
+
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+atexit.register(cleanup_and_exit)
 
 
 # ___________________________________
@@ -75,18 +103,31 @@ monitor_configs = [
 ]
 # ___________________________________
 
-def periodic_update(object_monitor, interval):
+# def periodic_update(object_monitor, interval):
+#     while not stop_event.is_set():
+#         time_start = time.time()
+#         object_monitor.update()
+#         time_update = time.time() - time_start
+#         if time_update < interval:
+#             time.sleep(interval - time_update)
+#     logger_monitoring.info(f"Поток завершился {object_monitor.name}")
+
+def periodic_update(object_monitor):
     while not stop_event.is_set():
         time_start = time.time()
         object_monitor.update()
         time_update = time.time() - time_start
-        if time_update < interval:
-            time.sleep(interval - time_update)
-    logger_monitoring.info(f"Поток завершился {object_monitor.name}")
 
+        with object_monitor.interval_lock:
+            current_interval = object_monitor.update_interval
+        if time_update < current_interval:
+            time.sleep(current_interval - time_update)
+
+    logger_monitoring.info(f"Поток завершился {object_monitor.name}")
 
 def main():
     try:
+        global CONN
         CONN = create_connection()
 
         monitors = {}
@@ -109,7 +150,8 @@ def main():
             monitor_class = config['monitor_class']
 
             monitor = monitor_class()
-
+            monitor.update_interval = 1
+            monitor.interval_lock = threading.Lock()
             index_list = create_index_for_any(items_agent_reg_response, config['settings_file'], monitor)
 
             for item_id in index_list:
@@ -125,14 +167,17 @@ def main():
             monitor = data['monitor']
 
             update_interval = calculate_gcd_for_group(data['index_list'], item_all_interval)
+            with monitor.interval_lock:
+                monitor.update_interval = update_interval
             logger_monitoring.info(f" Для [{name}] получен interval update = {update_interval}")
 
             if update_interval is None:
+                logger_monitoring.info(f" Для [{name}] нет потока!!")
                 continue  # или throw
 
             thread = threading.Thread(
                 target=periodic_update,
-                args=(monitor, update_interval),
+                args=(monitor, ),
                 name=f"{name}_update"
             )
             thread.start()
@@ -149,8 +194,18 @@ def main():
                     sys.exit(1)
                 if uqir_new != user_query_interval_revision:
                     user_query_interval_revision = uqir_new
-                    metrics_polling_plan = update_metrics_polling()
+                    metrics_polling_plan, item_all_interval = get_metrics_polling_plan()
                     logger_monitoring.info("Обновлено MIL")
+                    # дописать код, который остановит потоки и создаст их заново
+
+                    for name, data in monitors.items():
+                        monitor = data['monitor']
+                        new_interval = calculate_gcd_for_group(data['index_list'], item_all_interval)
+                        if new_interval is not None:
+                            with monitor.interval_lock:
+                                monitor.update_interval = new_interval
+                            logger_monitoring.info(f"Для [{name}] обновлён interval: {new_interval}")
+
                 last_modified_time = current_modified_time
             # ______________
 
@@ -193,7 +248,7 @@ def main():
         stop_event.set()
 
         for thread in threads:
-            thread.join()
+            thread.join(timeout=5)
             logger_monitoring.info(f"Поток {thread.name} завершён.")
 
         if CONN is not None:
@@ -209,6 +264,6 @@ if __name__ == "__main__":
         wait_for_start_signal()
     if not build_metric_tuples():
         logger_monitoring.error("REST CLIENT не запущен или проблема со схемами")
-        exit(1)
+        sys.exit(1)
     # создание и проверка промежуточных файлов
     main()
