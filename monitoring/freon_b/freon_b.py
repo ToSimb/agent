@@ -206,7 +206,14 @@ class Vu_fb(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["asic.name", "asic.taskId"]:
+                        result = self.validate_string(result)
+                    elif metric_id in ["asic.P"]:
+                        result = self.validate_double(result)
+                    else:
+                        result = self.validate_state(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
@@ -268,7 +275,12 @@ class Board_fb(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    if metric_id in ["asic.maxT", "asic.P"]:
+                        result = self.validate_double(result)
+                    else:
+                        result = self.validate_state(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
@@ -294,7 +306,9 @@ class Unit_T(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    result = self.validate_double(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
@@ -320,7 +334,9 @@ class Unit_U(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    result = self.validate_double(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
@@ -346,7 +362,9 @@ class Unit_I(SubObject):
         try:
             if metric_id in self.params:
                 result = self.params[metric_id]
-                self.params[metric_id] = None
+                if result is not None:
+                    self.params[metric_id] = None
+                    result = self.validate_double(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
