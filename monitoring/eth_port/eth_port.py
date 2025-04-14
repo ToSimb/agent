@@ -150,9 +150,9 @@ class EthPort(SubObject):
                 if result is not None:
                     self.params[metric_id] = None
                     if metric_id in ["if.in.speed", "if.in.load", "if.out.speed", "if.out.load"]:
-                        result = self.validate_value("double", result)
+                        result = self.validate_double(result)
                     else:
-                        result = self.validate_value("integer", result)
+                        result = self.validate_integer(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

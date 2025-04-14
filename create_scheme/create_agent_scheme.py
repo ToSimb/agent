@@ -2,7 +2,7 @@ import json
 
 def save_json_file(file_path, data):
     try:
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, 'w', encoding='utf-8-sig') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
     except Exception as e:
         print(e)
@@ -10,7 +10,7 @@ def save_json_file(file_path, data):
 
 def load_json_file(file_path):
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
             return json.load(f)
     except Exception as e:
         print(e)
@@ -89,7 +89,7 @@ def find_root_templates(templates_data):
 def main():
     try:
         templates_path = 'templates.json'
-        metrics_path = 'metric_new.json'
+        metrics_path = 'metrics.json'
 
         templates_data = load_json_file(templates_path)
         metrics_data = load_json_file(metrics_path)

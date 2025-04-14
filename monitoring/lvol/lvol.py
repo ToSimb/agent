@@ -115,10 +115,10 @@ class Lvol(SubObject):
                 result = self.params[metric_id]
                 if result is not None:
                     if metric_id in ["lvol.part.mountpoint"]:
-                        result = self.validate_value("string", result)
+                        result = self.validate_string(result)
                     else:
                         self.params[metric_id] = None
-                        result = self.validate_value("integer", result)
+                        result = self.validate_integer(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")

@@ -364,7 +364,7 @@ class Core(SubObject):
                 result = self.params[metric_id]
                 if result is not None:
                     self.params[metric_id] = None
-                    result = self.validate_value("double", result)
+                    result = self.validate_double(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
