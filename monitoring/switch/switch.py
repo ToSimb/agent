@@ -1,5 +1,5 @@
-from pysnmp.hlapi import SnmpEngine, CommunityData, UdpTransportTarget, ContextData
-from pysnmp.hlapi import ObjectType, ObjectIdentity, nextCmd, getCmd
+from pysnmp.hlapi import (SnmpEngine, CommunityData, UdpTransportTarget, ContextData,
+                          ObjectType, ObjectIdentity, nextCmd, getCmd)
 from monitoring.base import BaseObject, SubObject
 import json
 

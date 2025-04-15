@@ -1,6 +1,5 @@
 import psutil
-from monitoring.base import BaseObject
-from monitoring.base import SubObject
+from monitoring.base import BaseObject, SubObject
 
 class LvolsMonitor(BaseObject):
     def __init__(self):
