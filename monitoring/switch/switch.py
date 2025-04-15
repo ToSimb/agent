@@ -1,8 +1,7 @@
-import json
 from pysnmp.hlapi import SnmpEngine, CommunityData, UdpTransportTarget, ContextData
 from pysnmp.hlapi import ObjectType, ObjectIdentity, nextCmd, getCmd
-from monitoring.base import BaseObject
-from monitoring.base import SubObject
+from monitoring.base import BaseObject, SubObject
+import json
 
 
 class Switch(BaseObject):
@@ -17,6 +16,7 @@ class Switch(BaseObject):
         self.interfaces = {}
         self.interfaces_info = {}
         self.item_index = {}
+        self.index_interface = {}
         self.connection_value = None
         self.connection_id = -1
 
@@ -45,12 +45,11 @@ class Switch(BaseObject):
             return
         self.connection_value = True
 
-        index_interface = self.__get_switch_interfaces()
-        if not index_interface:
+        self.index_interface = self.__get_switch_interfaces()
+        if not self.index_interface:
             print(f"Ошибка на коммутаторе: {self.ip}. Интерфейсы не найдены!")
             return
-
-        for index in index_interface:
+        for index in self.index_interface.values():
             self.interfaces[index] = Interface()
             self.interfaces_info[index] = f"switch:{self.system_id}:{index}"
         self.interfaces_info['connection'] = f"switch:connection"
@@ -66,6 +65,7 @@ class Switch(BaseObject):
         except json.JSONDecodeError as e:
             print(f"Ошибка разбора JSON в файле коммутаторов {file_path}: {e}")
         return None
+
 
     def __check_switch_status(self):
         """"
@@ -90,13 +90,7 @@ class Switch(BaseObject):
             return True
 
     def __get_switch_interfaces(self):
-        """
-        Получает список описаний сетевых интерфейсов (ifDescr) с коммутатора по SNMP.
-
-        :return: список ifDescr (например, ['GigabitEthernet0/1', 'Vlan1', ...])
-        """
-        interfaces = []
-        # SNMP OID для ifDescr: 1.3.6.1.2.1.2.2.1.2
+        interfaces = {}
         oid_if_descr = ObjectIdentity('1.3.6.1.2.1.2.2.1.2')
 
         for (errorIndication,
@@ -108,7 +102,6 @@ class Switch(BaseObject):
                                   ContextData(),
                                   ObjectType(oid_if_descr),
                                   lexicographicMode=False):
-
             if errorIndication:
                 print(f"SNMP ошибка на {self.ip} при получении описаний интерфейсов: {errorIndication}")
                 break
@@ -118,14 +111,18 @@ class Switch(BaseObject):
             else:
                 for varBind in varBinds:
                     oid, value = varBind # value — это ifDescr (строка)
-                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS'] and 'IB' in str(value): # Ф51 ванны Ib, Ф51 шкаф
-                        value = str(value).split('/')[-1]
-                        interfaces.append(value)
-                    elif self.model in ["D-Link DGS-1210-28X/ME"] and 'D-Link' in str(value): # ФБ в стойке
-                        value = str(value).split()[-1]
-                        interfaces.append(value)
-                    elif self.model in ["Mellanox SX6700"] and 'IB/' in str(value): # Изменить для других коммутаторов
-                        pass
+                    if_oid_index = str(oid).split('.')[-1]
+                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS']: # Ф51 ванны Ib, Ф51 шкаф
+                        if 'IB' in str(value):
+                            value = str(value).split('/')[-1]
+                            interfaces[if_oid_index] = value
+                    elif self.model in ["D-Link DGS-1210-28X/ME"]: # ФБ в стойке
+                        if 'D-Link' in str(value):
+                            value = str(value).split()[-1]
+                            interfaces[if_oid_index] = value
+                    elif self.model in ["Mellanox SX6700"]: # Изменить для других коммутаторов
+                        if 'IB' in str(value):
+                            pass
                     else:
                         print(f"Модель {self.model} коммутатора с ip: {self.ip} не поддерживается!")
         return interfaces
@@ -158,24 +155,26 @@ class Switch(BaseObject):
                  errorIndex,
                  varBinds) in nextCmd(SnmpEngine(),
                                       CommunityData(self.community, mpModel=1),
-                                      UdpTransportTarget((self.ip, self.snmp_port), timeout=1, retries=2),
+                                      UdpTransportTarget((self.ip, self.snmp_port), timeout=1, retries=1),
                                       ContextData(),
                                       ObjectType(oid_obj),
                                       lexicographicMode=False):
 
                 if errorIndication:
-                    print(f"SNMP ошибка на {self.ip}: {errorIndication} при выполнении update")
+                    print(f"SNMP ошибка на {self.ip}: {errorIndication} при попытке получения параметра по OID-{oid_base}")
                     break
                 elif errorStatus:
-                    print(f"SNMP ошибка на {self.ip}: {errorStatus.prettyPrint()}при выполнении update")
+                    print(f"SNMP ошибка на {self.ip}: {errorIndication} при попытке получения параметра по OID-{oid_base}")
                     break
                 else:
                     for varBind in varBinds:
                         oid, value = varBind
-                        if_index = str(oid).split('.')[-1]
-                        if if_index not in result:
-                            result[if_index] = {}
-                        result[if_index][metric_name] = int(value)
+                        if_oid_index = str(oid).split('.')[-1]
+                        if_index = self.index_interface.get(if_oid_index)
+                        if if_index is not None:
+                            if if_index not in result:
+                                result[if_index] = {}
+                            result[if_index][metric_name] = int(value)
 
         if result:
             self.connection_value = True
