@@ -140,9 +140,9 @@ class GPU(SubObject):
                     self.params[metric_id] = None
                     if metric_id in ["gpu.index", "gpu.clocks.current.graphics", "gpu.clocks.current.memory", "gpu.utilization.gpu",
                                      "gpu.utilization.memory", "gpu.memory.used", "gpu.fan.speed", "gpu.temperature.gpu"]:
-                        result = self.validate_value("integer", result)
+                        result = self.validate_integer(result)
                     else:
-                        result = self.validate_value("string", result)
+                        result = self.validate_string(result)
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
