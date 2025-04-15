@@ -12,7 +12,7 @@ from logger.logger_rest_client import logger_rest_client
 
 def open_file(file_path):
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, 'r', encoding='utf-8-sig') as file:
             content = json.load(file)
             return content
     except FileNotFoundError:
@@ -27,7 +27,7 @@ def open_file(file_path):
 
 def save_file(data, file_path):
     try:
-        with open(file_path, 'w', encoding='utf-8') as file:
+        with open(file_path, 'w', encoding='utf-8-sig') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         logger_rest_client.info(f"Данные успешно сохранены в {file_path}")
     except Exception as e:
@@ -120,13 +120,13 @@ def compare_full_paths(scheme_data, agent_reg_response_data):
     only_in_registration = registration_paths - scheme_paths
 
     if only_in_scheme:
-        print("Есть в agent_scheme, но нет в registration:")
+        logger_rest_client.debug("Есть в agent_scheme, но нет в registration:")
         for path in sorted(only_in_scheme):
-            print(f"  {path}")
+            logger_rest_client.debug(f"  {path}")
 
     if only_in_registration:
-        print("Есть в agent_reg_response, но нет в scheme:")
+        logger_rest_client.debug("Есть в agent_reg_response, но нет в scheme:")
         for path in sorted(only_in_registration):
-            print(f"  {path}")
+            logger_rest_client.debug(f"  {path}")
 
     return bool(only_in_scheme or only_in_registration)

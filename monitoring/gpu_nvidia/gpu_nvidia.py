@@ -2,6 +2,8 @@ import subprocess
 from monitoring.base import BaseObject
 from monitoring.base import SubObject
 
+from logger.logger_monitoring import logger_monitoring
+
 class GPUsMonitor(BaseObject):
     def __init__(self):
         """
@@ -51,8 +53,8 @@ class GPUsMonitor(BaseObject):
                         self.item_index[str(gpu_dict[index])] = self.gpus.get(key, None)
                         break
             else:
-                print(f'Для индекса {index} нет значения')
-        print("Индексы для GPU обновлены")
+                logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для GPU обновлены")
 
     def update(self):
         try:
@@ -64,7 +66,7 @@ class GPUsMonitor(BaseObject):
             )
             lines = result.stdout.splitlines()
         except:
-            print("No GPUs found")
+            logger_monitoring.error("No GPUs found")
             return False
 
         for line in lines:
@@ -86,7 +88,7 @@ class GPUsMonitor(BaseObject):
                 }
                 self.gpus.get(values[1]).update(result_line)
             else:
-                print(f"uuid {values[1]} - не найден в списке объектов")
+                logger_monitoring.error(f"uuid {values[1]} - не найден в списке объектов")
         return True
 
     def get_all(self):
@@ -100,14 +102,14 @@ class GPUsMonitor(BaseObject):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"Ошибка - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id  - {item_id}: {metric_id} - {e}")
             return None
 
     def get_item_origin(self, uuid_gpu: str, metric_id:str):
         try:
             return self.gpus.get(uuid_gpu).get_metric(metric_id)
         except:
-            print(f"ошибка - {uuid_gpu}: {metric_id}")
+            logger_monitoring.error(f"ошибка - {uuid_gpu}: {metric_id}")
             return None
 
 class GPU(SubObject):
@@ -147,5 +149,5 @@ class GPU(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

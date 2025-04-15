@@ -1,5 +1,4 @@
 import json
-import random
 import time
 import os
 import math
@@ -7,6 +6,8 @@ from functools import reduce
 
 from storage.settings_handler import (get_settings,
                                       get_file_mtime)
+
+from logger.logger_monitoring import logger_monitoring
 
 from config import (DEBUG_MODE)
 
@@ -20,17 +21,17 @@ def measure_execution_time(func, *args, **kwargs):
 def open_file(file_name):
     if os.path.isfile(file_name):
         try:
-            with open(file_name, 'r', encoding='utf-8') as file:
+            with open(file_name, 'r', encoding='utf-8-sig') as file:
                 return json.load(file)
         except (json.JSONDecodeError, OSError) as e:
-            print(f"Ошибка при чтении файла {file_name}: {e}")
+            logger_monitoring.error(f"Ошибка при чтении файла {file_name}: {e}")
             return None
     else:
-        print(f"Файл {file_name} не найден.")
+        logger_monitoring.error(f"Файл {file_name} не найден.")
         return None
 
 def save_file_data(file_name, any_objects):
-    with open(file_name, 'w', encoding='utf-8') as file:
+    with open(file_name, 'w', encoding='utf-8-sig') as file:
         # Предполагаем, что any_objects - это список
         json.dump(any_objects, file, ensure_ascii=False, indent=4)
         return True
@@ -45,9 +46,8 @@ def crate_items_agent_reg_response():
 
 def create_index_for_any(items_agent_reg_response, file_name, object_monitor):
     file_index = open_file(file_name)
-    print(file_index)
-    index_dict = {}
 
+    index_dict = {}
     index_list = []
 
     for item_key, item_data in file_index.items():
@@ -69,14 +69,14 @@ def compare_full_paths(scheme_data, agent_reg_response_data):
     only_in_registration = registration_paths - scheme_paths
 
     if only_in_scheme:
-        print("Есть в agent_scheme, но нет в registration:")
+        logger_monitoring.debug("Есть в agent_scheme, но нет в registration:")
         for path in sorted(only_in_scheme):
-            print(f"  {path}")
+            logger_monitoring.debug(f"  {path}")
 
     if only_in_registration:
-        print("Есть в agent_reg_response, но нет в scheme:")
+        logger_monitoring.debug("Есть в agent_reg_response, но нет в scheme:")
         for path in sorted(only_in_registration):
-            print(f"  {path}")
+            logger_monitoring.debug(f"  {path}")
 
     return bool(only_in_scheme or only_in_registration)
 
@@ -114,14 +114,14 @@ def build_metric_tuples():
         # Получаем метрики, связанные с шаблоном
         metrics = template_metrics.get(template_id, None)
         if metrics is None:
-            print(f"Не найден шаблон {template_id}")
+            logger_monitoring.error(f"Не найден шаблон {template_id}")
             return False
         for metric_id in metrics:
             query_interval = metric_intervals.get(metric_id)
             if query_interval is not None:
                 result.append((item_id, metric_id, query_interval))
             else:
-                print(f"Не найден interval для метрики {metric_id}")
+                logger_monitoring.error(f"Не найден interval для метрики {metric_id}")
                 return False
     save_file_data("storage/metric_interval_list.json", result)
     return True
@@ -200,19 +200,19 @@ def wait_for_start_signal():
         _,_,status_rest_client = get_settings()
         if status_rest_client:
             break
-        print("REST CLIENT не запущен")
+        logger_monitoring.error("REST CLIENT не запущен")
         time.sleep(60)
 
 def get_launch_timestamp():
     last_modified_time = get_file_mtime()
     if last_modified_time is None:
-        print("Не удалось получить время изменения файла.")
+        logger_monitoring.error("Не удалось получить время изменения файла.")
         return -1, -1
 
     _, user_query_interval_revision, rest_client_start = get_settings()
     if not DEBUG_MODE:
         if rest_client_start is not True:
-            print("Не удалось получить время изменения файла.")
+            logger_monitoring.error("Не удалось получить время изменения файла.")
             return -1, -1
 
     return last_modified_time, user_query_interval_revision

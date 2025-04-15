@@ -4,13 +4,21 @@ import os
 from monitoring.base import BaseObject
 from monitoring.base import SubObject
 
+from logger.logger_monitoring import logger_monitoring
+
 URL = f"http://127.0.0.1:8080/freon/25_2"
-# URL = f"http://192.168.123.61:9002/api/v1/system"
+# URL = f"http://192.168.0.101:9002/api/v1/system"
 COUNT_BOARDS = 6
 COUNT_SENSOR_T = 13
 COUNT_SENSOR_U = 14
 COUNT_SENSOR_I = 14
 
+HASH_STATE = {
+    "started": "OK",
+    "disconnected": "FATAL",
+    "idle": "OK",
+    "sleep": "ERROR"
+}
 
 class FreonB(BaseObject):
     def __init__(self):
@@ -51,11 +59,11 @@ class FreonB(BaseObject):
         self.vus = {}
         self.vus_info = {}
         self.item_index = {}
-        self.conn = False
+        self.conn = "FATAL"
         self.connection = -1
         fb = self.__send_req()
         if fb is not None:
-            self.conn = True
+            self.conn = "OK"
             for i in fb["rows"]:
                 if i["name"]:
                     self.vus[i["name"]] = Vu_fb(i["name"])
@@ -70,9 +78,9 @@ class FreonB(BaseObject):
                         for index_I in range(COUNT_SENSOR_I):
                             self.vus[f"{i['name']}:board:{index}:I:{index_I}"] = units_I[index_I]
                 else:
-                    print("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-Б!")
+                    logger_monitoring.error("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-Б!")
         else:
-            print("нет соединения с Ф-Б при init")
+            logger_monitoring.error("нет соединения с Ф-Б при init")
         file_dict = self.__open_dict(file_name)
         if file_dict is not None:
             for index_vu in file_dict.keys():
@@ -88,14 +96,14 @@ class FreonB(BaseObject):
                         for index_I in range(COUNT_SENSOR_I):
                             self.vus_info[f"{index_vu}:board:{index}:I:{index_I}"] = f"{path_id}:board:{index}:I:{index_I}"
                 else:
-                    print(f"ERROR: нет {index_vu} в списке объектов!")
+                    logger_monitoring.debug(f"ERROR: нет {index_vu} в списке объектов!")
             self.vus_info['connection'] = 'fb:connection'
         else:
-            print("файл пустой")
+            logger_monitoring.error("файл пустой")
 
         if (len(self.vus) + 1) == len(self.vus_info):
-            print("ВСЕ ОБЪЕКТЫ СОЗДАНЫ")
-        print(f"Количество узлов {len(self.vus)}")
+            logger_monitoring.info("ВСЕ ОБЪЕКТЫ СОЗДАНЫ")
+        logger_monitoring.info(f"Количество узлов {len(self.vus)}")
 
     @staticmethod
     def __open_dict(file_name):
@@ -104,7 +112,7 @@ class FreonB(BaseObject):
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:
-            print(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
             return None
 
     @staticmethod
@@ -114,7 +122,7 @@ class FreonB(BaseObject):
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Ошибка при обращении к API: {e}")
+            logger_monitoring.error(f"Ошибка при обращении к API: {e}")
             return None
 
     def get_objects_description(self):
@@ -132,7 +140,9 @@ class FreonB(BaseObject):
         """
         for index in fb_dict:
             if fb_dict[index] is not None:
-                if index == "connection":
+                if index == "fb:connection":
+                    self.connection = fb_dict[index]
+                elif index == "connection":
                     self.connection = fb_dict[index]
                 else:
                     for key, value in self.vus_info.items():
@@ -140,19 +150,17 @@ class FreonB(BaseObject):
                             self.item_index[str(fb_dict[index])] = self.vus.get(key, None)
                             break
                     else:
-                        print(f'Для индекса {index} нет значения')
-        print("Индексы для Ф-Б обновлены")
+                        logger_monitoring.error(f'Для индекса {index} нет значения')
 
     def update(self):
         fb = self.__send_req()
         if fb is not None:
-            self.conn = True
-            print("есть связь")
+            self.conn = "OK"
             for i in fb["rows"]:
                 if i["name"]:
                     self.vus[i["name"]].update(i)
         else:
-            self.conn = False
+            self.conn = "FATAL"
 
     def get_all(self):
         """
@@ -168,10 +176,10 @@ class FreonB(BaseObject):
         try:
             if item_id in str(self.connection):
                 if metric_id == "connection.state":
-                    return self.conn
+                    return self.validate_state(self.conn)
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"ошибка - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
 
 
@@ -208,17 +216,19 @@ class Vu_fb(SubObject):
                 result = self.params[metric_id]
                 if result is not None:
                     self.params[metric_id] = None
-                    if metric_id in ["asic.name", "asic.taskId"]:
+                    if metric_id in ["asic.name"]:
                         result = self.validate_string(result)
+                    elif metric_id in ["asic.taskId"]:
+                        result = self.validate_integer(result)
                     elif metric_id in ["asic.P"]:
                         result = self.validate_double(result)
                     else:
-                        result = self.validate_state(result)
+                        result = self.validate_state(HASH_STATE.get(result, None))
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -280,12 +290,12 @@ class Board_fb(SubObject):
                     if metric_id in ["asic.maxT", "asic.P"]:
                         result = self.validate_double(result)
                     else:
-                        result = self.validate_state(result)
+                        result = self.validate_state(HASH_STATE.get(result, None))
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -313,7 +323,7 @@ class Unit_T(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -341,7 +351,7 @@ class Unit_U(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -369,5 +379,5 @@ class Unit_I(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

@@ -6,6 +6,7 @@ import json
 from monitoring.base import BaseObject
 from monitoring.base import SubObject
 
+from logger.logger_monitoring import logger_monitoring
 
 class DisksMonitor(BaseObject):
     def __init__(self):
@@ -28,7 +29,7 @@ class DisksMonitor(BaseObject):
                     disk_index = self.__replace_device_name(disk[0], True)
                     self.disks_info[disk[0]] = f"disk:{disk_index}"
         except Exception as e:
-            print(f"Ошибка выполнения команды {command}: {e}")
+            logger_monitoring.error(f"Ошибка выполнения команды {command}: {e}")
 
     def update(self):
         disks_speed = self.__get_disks_rw_speed()
@@ -42,7 +43,7 @@ class DisksMonitor(BaseObject):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"Ошибка - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
 
     def create_index(self, disk_dict: dict):
@@ -53,8 +54,8 @@ class DisksMonitor(BaseObject):
                         self.item_index[str(disk_dict[index])] = self.disks.get(key, None)
                         break
                 else:
-                    print(f'Для индекса {index} нет значения')
-        print("Индексы для дисков обновлены")
+                    logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для дисков обновлены")
 
     def get_objects_description(self):
         return self.disks_info
@@ -88,7 +89,7 @@ class DisksMonitor(BaseObject):
         elif self.system == "Linux":
             return self.__get_linux_disk_speed() if self.iostat_available else {}
         else:
-            print("Ошибка: Поддерживаются только Windows и Linux.")
+            logger_monitoring.error("Ошибка: Поддерживаются только Windows и Linux.")
             return None
 
     def __get_windows_disk_speed(self):
@@ -112,7 +113,7 @@ class DisksMonitor(BaseObject):
                         disk_speeds[disk_name] = {"read": None, "write": None}
             return disk_speeds
         except Exception as e:
-            print(f"Ошибка при получении данных о скорости дисков в Windows: {e}")
+            logger_monitoring.error(f"Ошибка при получении данных о скорости дисков в Windows: {e}")
             return {}
 
     @staticmethod
@@ -141,11 +142,10 @@ class DisksMonitor(BaseObject):
                                 write_speed = float(write_speed.replace(",", ".")) * 1024
                                 disk_speeds[f"/dev/{disk_name}"] = {"read": read_speed, "write": write_speed}
                         except ValueError:
-                            print("!")
                             disk_speeds[f"/dev/{disk_name}"] = {"read": None, "write": None}
             return disk_speeds
         except Exception as e:
-            print(f"Ошибка при получении данных о скорости дисков в Linux: {e}")
+            logger_monitoring.erro(f"Ошибка при получении данных о скорости дисков в Linux: {e}")
             return {}
 
 
@@ -179,7 +179,7 @@ class Disk(SubObject):
                 return
             data = json.loads(output)
         except Exception as e:
-            print(f"Ошибка вызова команды {command} - {e}")
+            logger_monitoring.erro(f"Ошибка вызова команды {command} - {e}")
             return
 
         if data.get("ata_smart_attributes"):
@@ -233,5 +233,5 @@ class Disk(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

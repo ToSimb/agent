@@ -1,7 +1,11 @@
 import psutil
 import time
+import json
+import os
 from monitoring.base import BaseObject
 from monitoring.base import SubObject
+
+from logger.logger_monitoring import logger_monitoring
 
 INTERVAL = 0.5
 
@@ -56,9 +60,9 @@ class EthPortMonitor(BaseObject):
                         self.item_index[str(eth_port_dict[index])] = self.eth_ports.get(key, None)
                         break
                 else:
-                    print(f'Для индекса {index} нет значения')
+                    logger_monitoring.debug(f'Для индекса {index} нет значения')
         self.update_eth_ports_of_update(eth_ports_list)
-        print("Индексы для ETH_PORT обновлены")
+        logger_monitoring.info("Индексы для ETH_PORT (if) обновлены")
 
     def update_eth_ports_of_update(self, eth_ports_list: list):
         """
@@ -69,7 +73,7 @@ class EthPortMonitor(BaseObject):
                 self.eth_ports_to_update[key] = True
             else:
                 self.eth_ports_to_update[key] = False
-        print("Значения условий изменения портов изменены")
+        logger_monitoring.info("Значения условий изменения портов изменены")
 
     def update(self):
         first_stats = psutil.net_io_counters(pernic=True)
@@ -91,17 +95,25 @@ class EthPortMonitor(BaseObject):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except:
-            print(f"ошибка - {item_id}: {metric_id}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id}")
             return None
 
 
 class EthPort(SubObject):
     def __init__(self, eth_port_name: str, ):
         super().__init__()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = script_dir + "/if_dict.txt"
+        file_max_bandwidth = self.__open_dict(file_name)
+
         self.name = eth_port_name
-        bandwidth_stats = psutil.net_if_stats()
-        bandwidth_stat = bandwidth_stats.get(self.name, None)
-        self.max_bandwidth = int(bandwidth_stat.speed * 125000) if bandwidth_stat.speed != 0.0 else None
+        if self.name in file_max_bandwidth.keys():
+            self.max_bandwidth = file_max_bandwidth[self.name]
+        else:
+            bandwidth_stats = psutil.net_if_stats()
+            bandwidth_stat = bandwidth_stats.get(self.name, None)
+            self.max_bandwidth = int(bandwidth_stat.speed * 125000) if bandwidth_stat.speed != 0.0 else None
+        logger_monitoring.debug(f"{self.name} : {self.max_bandwidth}")
         self.params = {
             "if.in.bytes": None,
             "if.in.packets": None,
@@ -114,6 +126,16 @@ class EthPort(SubObject):
             "if.out.speed": None,
             "if.out.load": None
         }
+
+    @staticmethod
+    def __open_dict(file_name):
+        try:
+            with open(file_name, "r") as f:
+                file_dict = json.load(f)
+                return file_dict
+        except Exception as e:
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
+            return None
 
     def update(self, first_stats_eth_port=None, second_stats_eth_port=None):
         in_speed = round(float(second_stats_eth_port.bytes_recv - first_stats_eth_port.bytes_recv) / INTERVAL, 2)
@@ -157,5 +179,5 @@ class EthPort(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

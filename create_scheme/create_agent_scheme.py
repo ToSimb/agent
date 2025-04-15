@@ -7,7 +7,6 @@ def save_json_file(file_path, data):
     except Exception as e:
         print(e)
 
-
 def load_json_file(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8-sig') as f:
@@ -88,8 +87,8 @@ def find_root_templates(templates_data):
 
 def main():
     try:
-        templates_path = 'templates.json'
-        metrics_path = 'metrics.json'
+        templates_path = 'templates_fb.json'
+        metrics_path = 'all_metrics.json'
 
         templates_data = load_json_file(templates_path)
         metrics_data = load_json_file(metrics_path)
@@ -99,6 +98,8 @@ def main():
         template_dict = build_template_dict(templates_data["templates"])
 
         root_ids = find_root_templates(templates_data)
+        print(root_ids)
+
         item_id_list = []
 
         for root_id in root_ids:
@@ -111,7 +112,7 @@ def main():
                 "metrics": filtered_metrics,
                 "templates": templates_data.get("templates", []),
                 "item_id_list": item_id_list,
-                "join_id_list": [],
+                "join_id_list": [{"full_path": root+"[0]", "join_id": str(i + 1)} for i, root in enumerate(root_ids)],
                 "item_info_list": []
             }
         }

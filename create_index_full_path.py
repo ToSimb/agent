@@ -14,19 +14,19 @@ item_path = {}
 for item in agent_scheme.get('scheme').get('item_id_list'):
     item_full_path = item.get('full_path')
     numbers = re.findall(r'\[(\d+)\]', item_full_path)
-    if 'system' in item_full_path.split('/')[-1]:
+    if 'system_' in item_full_path.split('/')[-1]:
         item_path[f"chassis:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - system:{numbers[-1]}")
-    elif 'chassis' in item_full_path.split('/')[-1]:
+    elif 'chassis_' in item_full_path.split('/')[-1]:
         item_path[f"chassis:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - system:{numbers[-1]}")
-    elif 'core' in item_full_path.split('/')[-1]:
+    elif 'core_' in item_full_path.split('/')[-1]:
         item_path[f"cpu:{numbers[-2]}:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - cpu:{numbers[-2]}:{numbers[-1]}")
-    elif 'gpu' in item_full_path.split('/')[-1]:
+    elif 'gpu_' in item_full_path.split('/')[-1]:
         item_path[f"gpu:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - gpu:{numbers[-1]}")
-    elif 'lvol' in item_full_path.split('/')[-1]:
+    elif 'lvol_' in item_full_path.split('/')[-1]:
         item_path[f"lvol:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - lvol:{numbers[-1]}")
     # if 'vus_fa_1' in item_full_path:

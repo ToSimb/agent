@@ -2,6 +2,8 @@ import psutil
 from monitoring.base import BaseObject
 from monitoring.base import SubObject
 
+from logger.logger_monitoring import logger_monitoring
+
 class LvolsMonitor(BaseObject):
     def __init__(self):
         """
@@ -36,7 +38,7 @@ class LvolsMonitor(BaseObject):
 
     @staticmethod
     def __filter_partitions(partitions):
-        ignore_words = ['loop', 'snap', 'var/snap', 'docker', 'mnt', 'media']
+        ignore_words = ['loop', 'snap', 'var/snap', 'docker', 'mnt', 'media', 'nfs']
         filtered = [
             p for p in partitions
             if not any(word in p.mountpoint for word in ignore_words)
@@ -61,8 +63,8 @@ class LvolsMonitor(BaseObject):
                         self.item_index[str(lvol_dict[index])] = self.lvols.get(key, None)
                         break
                 else:
-                    print(f'Для индекса {index} нет значения')
-        print("Индексы для LVOLs обновлены")
+                    logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для LVOLs обновлены")
 
     def update(self):
         for lvol in self.lvols.values():
@@ -79,7 +81,7 @@ class LvolsMonitor(BaseObject):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"ошибка - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id  - {item_id}: {metric_id} - {e}")
             return None
 
 
@@ -123,5 +125,5 @@ class Lvol(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

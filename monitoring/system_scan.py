@@ -14,7 +14,6 @@ def find_field(fields, output):
             return match.group(1).strip()
     return "Unknown"
 
-
 def get_disks():
     """
     Получает список дисков с помощью smartctl, включая модель и серийный номер.
@@ -44,7 +43,6 @@ def get_disks():
         disks.append({"error": str(e)})
     return disks
 
-
 def get_gpu():
     """
     Получает список GPU с помощью nvidia-smi, включая имя, серийный номер и UUID.
@@ -70,7 +68,6 @@ def get_gpu():
     except FileNotFoundError:
         print("error: nvidia-smi not found")
     return gpus
-
 
 def get_cpu():
     """
@@ -116,7 +113,6 @@ def get_cpu():
         print(f"error: {e}")
     return cpus
 
-
 def get_network_interfaces():
     """
     Получает список сетевых интерфейсов и их IPv4-адресов.
@@ -143,7 +139,7 @@ def get_mounted_lvm_volumes():
     lvols = []
     try:
         partitions = psutil.disk_partitions()
-        ignore_words = ['loop', 'snap', 'var/snap', 'docker', 'mnt', 'media']
+        ignore_words = ['loop', 'snap', 'var/snap', 'docker', 'mnt', 'media', 'nfs']
         filtered = [
             p for p in partitions
             if not any(word in p.mountpoint for word in ignore_words)
