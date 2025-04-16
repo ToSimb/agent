@@ -144,7 +144,7 @@ class DisksMonitor(BaseObject):
                             disk_speeds[f"/dev/{disk_name}"] = {"read": None, "write": None}
             return disk_speeds
         except Exception as e:
-            logger_monitoring.erro(f"Ошибка при получении данных о скорости дисков в Linux: {e}")
+            logger_monitoring.error(f"Ошибка при получении данных о скорости дисков в Linux: {e}")
             return {}
 
 
@@ -167,19 +167,16 @@ class Disk(SubObject):
     def update(self, disks_speed):
         result = {"disk.write.bytes.per.sec": disks_speed["write"], "disk.read.bytes.per.sec": disks_speed["read"]}
 
+        data = {}
         if self.system == "Windows":
             command = ['smartctl', '-A', '-j', '-d', self.interface_type, self.name]
         else:
             command = ['smartctl', '-A', '-j', self.name]
-
         try:
             output = subprocess.check_output(command, text=True)
-            if not output:
-                return
             data = json.loads(output)
         except Exception as e:
-            logger_monitoring.erro(f"Ошибка вызова команды {command} - {e}")
-            return
+            logger_monitoring.error(f"Ошибка вызова команды {command} - {e}")
 
         if data.get("ata_smart_attributes"):
             attributes = data.get("ata_smart_attributes", {}).get("table", [])

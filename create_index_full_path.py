@@ -55,15 +55,17 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
                 item_path[f"fa:{index}:{numbers[-2]}:{numbers[-1]}"] = item_full_path
     elif 'vu_fb_20' in item_full_path:
         if 'vu_fb_20' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-2]}:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-1]}"] = item_full_path
         elif 'board_fb' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-3]}:{numbers[-2]}:board:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-2]}:board:{numbers[-1]}"] = item_full_path
         elif 'temperature' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:T:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:T:{numbers[-1]}"] = item_full_path
         elif 'current' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
         elif 'voltage' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
+        elif 'connection' in item_full_path.split('/')[-1]:
+            item_path[f"fb:{numbers[-2]}:connection"] = item_full_path
 
 # print("Пути из схемы:")
 # for item in item_path:

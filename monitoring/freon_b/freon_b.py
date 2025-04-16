@@ -34,13 +34,13 @@ class FreonB(BaseObject):
                                     192.168.0.60:board:4:T:0 <__main__.Unit_T object at 0x794412cf1040>}
             vus_info (dict): Словарь, где ключ  - ip-address узла  + дополнение в зависимости от объекта,
                                а значением - строка, представляющая информацию о его месте в системе.
-                               Пример: {'192.168.0.60': 'fb:3:20', ..
+                               Пример: {'192.168.0.60': 'fb:60', ..
 
-                                        '192.168.0.60:board:0': 'fb:3:20:board:0', ..
+                                        '192.168.0.60:board:0': 'fb:60:board:0', ..
 
-                                        192.168.0.60:board:5:T:0': 'fb:3:20:board:5:T:0', ...
+                                        192.168.0.60:board:5:T:0': 'fb:60:board:5:T:0', ...
 
-                                        'connection': 'fb:connection'}
+                                        '192.168.0.60:connection': 'fb:60:connection'}
             item_index: Словарь, где ключ - это будущий item_id из схемы,
                         а значением - объект класса Vu_fb(Board_fb, Unit_T,...).
                         (по факту мы делаем новые ссылки на объекты)
@@ -59,7 +59,7 @@ class FreonB(BaseObject):
         self.vus_info = {}
         self.item_index = {}
         self.conn = "FATAL"
-        self.connection = -1
+        self.connection = []
         fb = self.__send_req()
         if fb is not None:
             self.conn = "OK"
@@ -84,8 +84,11 @@ class FreonB(BaseObject):
         if file_dict is not None:
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
-                    path_id = f"fb:{int(file_dict[index_vu]['x'])-1}:{int(file_dict[index_vu]['y'])-1}"
+                    # path_id = f"fb:{int(file_dict[index_vu]['x'])-1}:{int(file_dict[index_vu]['y'])-1}"
+                    index_vu_int = (int(file_dict[index_vu]['y'])-1) + (int(file_dict[index_vu]['x'])-1)*20
+                    path_id =f"fb:{index_vu_int}"
                     self.vus_info[index_vu] = path_id
+                    self.vus_info[f'connection:{index_vu_int}'] = f'{path_id}:connection'
                     for index in range(COUNT_BOARDS):
                         self.vus_info[f"{index_vu}:board:{index}"] = f"{path_id}:board:{index}"
                         for index_T in range(COUNT_SENSOR_T):
@@ -94,9 +97,10 @@ class FreonB(BaseObject):
                             self.vus_info[f"{index_vu}:board:{index}:U:{index_U}"] = f"{path_id}:board:{index}:U:{index_U}"
                         for index_I in range(COUNT_SENSOR_I):
                             self.vus_info[f"{index_vu}:board:{index}:I:{index_I}"] = f"{path_id}:board:{index}:I:{index_I}"
+
                 else:
                     logger_monitoring.debug(f"ERROR: нет {index_vu} в списке объектов!")
-            self.vus_info['connection'] = 'fb:connection'
+
         else:
             logger_monitoring.error("файл пустой")
 
@@ -125,6 +129,8 @@ class FreonB(BaseObject):
             return None
 
     def get_objects_description(self):
+        with open("1.json", "w") as f:
+            json.dump(self.vus_info, f)
         return self.vus_info
 
     def create_index(self, fb_dict):
@@ -139,10 +145,8 @@ class FreonB(BaseObject):
         """
         for index in fb_dict:
             if fb_dict[index] is not None:
-                if index == "fb:connection":
-                    self.connection = fb_dict[index]
-                elif index == "connection":
-                    self.connection = fb_dict[index]
+                if "connection" in index:
+                    self.connection.append(str(fb_dict[index]))
                 else:
                     for key, value in self.vus_info.items():
                         if value == index:
@@ -150,6 +154,7 @@ class FreonB(BaseObject):
                             break
                     else:
                         logger_monitoring.error(f'Для индекса {index} нет значения')
+        print(self.connection)
 
     def update(self):
         fb = self.__send_req()
@@ -173,8 +178,8 @@ class FreonB(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id in str(self.connection):
-                if metric_id == "connection.state":
+            if item_id in self.connection:
+                if metric_id == "connection.agent":
                     return self.validate_state(self.conn)
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
