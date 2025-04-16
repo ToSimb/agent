@@ -1,6 +1,5 @@
 import subprocess
-from monitoring.base import BaseObject
-from monitoring.base import SubObject
+from monitoring.base import BaseObject, SubObject
 
 from logger.logger_monitoring import logger_monitoring
 
