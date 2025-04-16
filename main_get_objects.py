@@ -7,6 +7,7 @@ from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk import DisksMonitor
+from monitoring.switch.switch import Switch
 from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB
 
@@ -31,9 +32,13 @@ def compare_interface_keys(tag, dict1, dict2):
         logger_monitoring.info(f"Интерфейсы по '{tag}' совпадают.")
         return False
 
-def monitor_start(monitor_class, tag):
+def monitor_start(monitor_class, tag, ip_addr = None):
     global PEREDELAY
-    monitor_instance, time_init = measure_execution_time(monitor_class)
+    if ip_addr is None:
+        monitor_instance, time_init = measure_execution_time(monitor_class)
+    else:
+        time_init = 0
+        monitor_instance = monitor_class(ip_addr)
     _, time_update = measure_execution_time(monitor_instance.update)
     objects_descr, time_get_obj = measure_execution_time(monitor_instance.get_objects_description)
     data, time_data = measure_execution_time(monitor_instance.get_all)
@@ -42,7 +47,6 @@ def monitor_start(monitor_class, tag):
 
     objects_key_old = open_file(settings_file)
     objects_key = {}
-
     for index_cpu in objects_descr:
         objects_key[objects_descr[index_cpu]] = None
 
@@ -51,9 +55,7 @@ def monitor_start(monitor_class, tag):
             PEREDELAY.append(tag)
     else:
         PEREDELAY.append(tag)
-
     save_file_data(settings_file, objects_key)
-
     logger_monitoring.info( "\n" + " * " * 10 + "\n"
                             f"  {tag.upper()} timings:\n"
                             f"      Initialization time:   {time_init}\n"
@@ -69,17 +71,24 @@ def monitor_start(monitor_class, tag):
 def main():
     logger_monitoring.info("- - -" * 10)
     monitors = [
-        (CPUsMonitor, 'cpu'),
-        (GPUsMonitor, 'gpu'),
-        (SystemMonitor, 'system'),
-        (LvolsMonitor, 'lvol'),
-        (DisksMonitor, 'disk'),
-        (EthPortMonitor, 'if'),
+        # (CPUsMonitor, 'cpu'),
+        # (GPUsMonitor, 'gpu'),
+        # (SystemMonitor, 'system'),
+        # (LvolsMonitor, 'lvol'),
+        # (DisksMonitor, 'disk'),
+        # (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
-        # (FreonB, 'f_b')
+        # (FreonB, 'f_b'),
+        (Switch, 'switch1', '10.70.0.250'),
+        # (Switch, 'switch2', '')
     ]
-    for monitor_class, tag in monitors:
-        monitor_start(monitor_class, tag)
+    for line in monitors:
+        if len(line) == 2:
+            monitor_class, tag = line
+            monitor_start(monitor_class, tag)
+        elif len(line) == 3:
+            monitor_class, tag, ip_addr = line
+            monitor_start(monitor_class, tag, ip_addr)
     logger_monitoring.info(f"Обрати внимание на {PEREDELAY}")
 
 

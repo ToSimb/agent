@@ -81,7 +81,6 @@ def find_root_templates(templates_data):
         for include in tmpl.get("includes", []):
             included_templates.add(include["template_id"])
 
-    # Корни — это те, кто есть, но не включён никуда
     root_templates = all_templates - included_templates
     return sorted(root_templates)
 
