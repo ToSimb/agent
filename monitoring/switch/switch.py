@@ -1,4 +1,5 @@
 import json
+import os
 from pysnmp.hlapi import (
     SnmpEngine,
     CommunityData,
@@ -11,9 +12,9 @@ from pysnmp.hlapi import (
 )
 from monitoring.base import BaseObject, SubObject
 
-
 class Switch(BaseObject):
-    def __init__(self, ip: str, file_path: str = "switches.json"):
+    def __init__(self, ip: str):
+        print(ip)
         super().__init__()
         self.ip = ip
         self.system_id = None
@@ -27,10 +28,12 @@ class Switch(BaseObject):
         self.index_interface = {}
         self.connection_value = None
         self.connection_id = -1
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = script_dir + "/switches.json"
 
-        config = self.__load_config(file_path)
+        config = self.__load_config(file_name)
         if not config:
-            print(f"Не удалось загрузить конфигурацию коммутатора {ip} из {file_path}")
+            print(f"Не удалось загрузить конфигурацию коммутатора {ip} из {file_name}")
             return
 
         current_switch = next((dt for dt in config.get("switches", []) if dt.get("ip", "") == ip), None)
@@ -121,15 +124,18 @@ class Switch(BaseObject):
                     oid, value = varBind
                     if_oid_index = str(oid).split('.')[-1]
                     # Обработка в зависимости от модели коммутатора
-                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS']:
+                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS']: # F51
                         if 'IB' in str(value):
-                            # Берём последний элемент после разделителя '/'
                             processed_value = str(value).split('/')[-1]
                             interfaces[if_oid_index] = processed_value
-                    elif self.model in ["D-Link DGS-1210-28X/ME"]:
+                    elif self.model in ["D-Link DGS-1210-28X/ME"]: # FB стойка
                         if 'D-Link' in str(value):
                             processed_value = str(value).split()[-1]
                             interfaces[if_oid_index] = processed_value
+                    elif self.model in ["MIKROTIK CRS312-4C+8XG-RM"]: # FB по 2 в ванне
+                        pass
+                    elif self.model in ["D-Link DGS-1210-52/ME"]: # FB по 1 в ванне
+                        pass
                     else:
                         print(f"Модель {self.model} коммутатора с ip: {self.ip} не поддерживается!")
         return interfaces
@@ -155,7 +161,6 @@ class Switch(BaseObject):
         result = {}
         for oid_base, metric_name in self.oids_map.items():
             oid_obj = ObjectIdentity(oid_base)
-
             for (errorIndication,
                  errorStatus,
                  errorIndex,
@@ -179,9 +184,9 @@ class Switch(BaseObject):
                         if_oid_index = str(oid).split('.')[-1]
                         if_index = self.index_interface.get(if_oid_index)
                         if if_index is not None:
-                            if if_index not in result:
+                            if if_index not in result.keys():
                                 result[if_index] = {}
-                                result[if_index][metric_name] = value
+                            result[if_index][metric_name] = value.prettyPrint()
 
         if result:
             self.connection_value = True
@@ -206,7 +211,6 @@ class Switch(BaseObject):
         except Exception as e:
             print(f"Ошибка получения метрики у {item_id} - {metric_id}: {e}")
             return None
-
 
 
 class Interface(SubObject):
