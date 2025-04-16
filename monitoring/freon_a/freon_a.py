@@ -3,9 +3,17 @@ import requests
 import os
 from monitoring.base import BaseObject, SubObject
 
+from logger.logger_monitoring import logger_monitoring
+
 URL = f"http://127.0.0.1:8080/freon/22"
 # URL = f"http://192.168.123.61:9002/api/v1/system"
 
+HASH_STATE = {
+    "started": "OK",
+    "disconnected": "FATAL",
+    "idle": "OK",
+    "sleep": "ERROR"
+}
 
 class FreonA(BaseObject):
     def __init__(self):
@@ -59,9 +67,9 @@ class FreonA(BaseObject):
                     for index_I in units_I.keys():
                         self.vus[f"{i['name']}:I:{index_I}"] = units_I[index_I]
                 else:
-                    print("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-А!")
+                    logger_monitoring.error("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-А!")
         else:
-            print("нет соединения с Ф-А при init")
+            logger_monitoring.error("нет соединения с Ф-А при init")
         file_dict = self.__open_dict(file_name)
         if file_dict is not None:
             for index_vu in file_dict.keys():
@@ -75,12 +83,12 @@ class FreonA(BaseObject):
                     for index in range(6):
                         self.vus_info[f"{[index_vu][0]}:I:{index}"] = f"{path}:I:{index}"
                 else:
-                    print(f"ERROR: нет {index_vu} в списке объектов!")
+                    logger_monitoring.error(f"ERROR: нет {index_vu} в списке объектов!")
             self.vus_info['connection'] = 'fa:connection'
         else:
-            print("файл пустой")
+            logger_monitoring.error("файл пустой")
         if (len(self.vus)+1) == len(self.vus_info):
-            print("ВСЕ ОБЪЕКТЫ СОЗДАНЫ")
+            logger_monitoring.info("ВСЕ ОБЪЕКТЫ СОЗДАНЫ")
 
     @staticmethod
     def __get_address_full_board(index):
@@ -111,7 +119,7 @@ class FreonA(BaseObject):
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:
-            print(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
             return None
 
     @staticmethod
@@ -121,7 +129,7 @@ class FreonA(BaseObject):
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Ошибка при обращении к API: {e}")
+            logger_monitoring.error(f"Ошибка при обращении к API: {e}")
             return None
 
     def get_objects_description(self):
@@ -149,15 +157,13 @@ class FreonA(BaseObject):
                             self.item_index[str(fa_dict[index])] = self.vus.get(key, None)
                             break
                     else:
-                        print(f'Для индекса {index} нет значения')
-        print("Индексы для Ф-А обновлены")
+                        logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для Ф-А обновлены")
 
     def update(self):
         fa = self.__send_req()
-        print("update FA")
         if fa is not None:
             self.conn = True
-            print("update")
             for i in fa["rows"]:
                 if i["name"]:
                     self.vus[i["name"]].update(i)
@@ -181,7 +187,7 @@ class FreonA(BaseObject):
                     return self.conn
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"ошибка - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
 
 
@@ -248,17 +254,19 @@ class Board_fa(SubObject):
                 result = self.params[metric_id]
                 if result is not None:
                     self.params[metric_id] = None
-                    if metric_id in ["asic.name", "asic.taskId"]:
+                    if metric_id in ["asic.name"]:
                         result = self.validate_string(result)
+                    elif metric_id in ["asic.taskId"]:
+                        result = self.validate_integer(result)
                     elif metric_id in ["asic.P"]:
                         result = self.validate_double(result)
                     else:
-                        result = self.validate_state(result)
+                        result = self.validate_state(HASH_STATE.get(result, None))
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -286,7 +294,7 @@ class Unit_T(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -314,7 +322,7 @@ class Unit_U(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
 
 
@@ -342,5 +350,5 @@ class Unit_I(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

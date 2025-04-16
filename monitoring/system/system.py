@@ -2,6 +2,7 @@ import time
 import psutil
 from monitoring.base import BaseObject
 
+from logger.logger_monitoring import logger_monitoring
 
 class SystemMonitor(BaseObject):
     def __init__(self):
@@ -68,8 +69,8 @@ class SystemMonitor(BaseObject):
                         self.item_index = str(system_dict[index])
                         break
                 else:
-                    print(f'Для индекса {index} нет значения')
-        print("Индексы для SYSTEM обновлены")
+                    logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для SYSTEM обновлены")
 
     def get_all(self):
         return_list = [self.params]
@@ -92,5 +93,5 @@ class SystemMonitor(BaseObject):
             else:
                 raise KeyError(f"Не найден такой item_id")
         except Exception as e:
-            print(f"Ошибка в запросе item - {item_id}, метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе item - {item_id}, метрики {metric_id} - {e}")
             return None

@@ -6,6 +6,8 @@ import ctypes
 from ctypes import wintypes, byref, POINTER, cast
 from monitoring.base import BaseObject, SubObject
 
+from logger.logger_monitoring import logger_monitoring
+
 class CPUsMonitor(BaseObject):
     def __init__(self):
         """
@@ -175,7 +177,7 @@ class CPUsMonitor(BaseObject):
                     cpu_names.update({parts[0].strip().replace('CPU', ''): parts[1].strip()})
             return cpu_names
         except Exception as e:
-            print(f"Ошибка получения списка процессоров с помощью wmic: {e}")
+            logger_monitoring.error(f"Ошибка получения списка процессоров с помощью wmic: {e}")
             return []
 
     def get_objects_description(self):
@@ -198,8 +200,8 @@ class CPUsMonitor(BaseObject):
                         self.item_index[str(cpu_dict[index])] = self.cores.get(key, None)
                         break
                 else:
-                    print(f'Для индекса {index} нет значения')
-        print("Индексы для CPU обновлены")
+                    logger_monitoring.debug(f'Для индекса {index} нет значения')
+        logger_monitoring.info("Индексы для CPU обновлены")
 
     def update(self):
         """
@@ -217,7 +219,7 @@ class CPUsMonitor(BaseObject):
             for index_core in range(len(self.cores_info)):
                 data_line = cores_info[str(index_core)] + [str(load[index_core])]
                 self.cores[str(index_core)].update(data_line)
-            print(time.time(), "Выполнено обновление CPU")
+            logger_monitoring.info("Выполнено обновление CPU")
         elif self.system == 'Windows':
             cores_info = self.__get_core_wmic_windows()
             for i, core in self.cores.items():
@@ -258,7 +260,7 @@ class CPUsMonitor(BaseObject):
                         output[columns[1]] = columns[2:]
             return output
         except Exception as e:
-            print(f"Ошибка при выполнении команды mpstat: {e}")
+            logger_monitoring.error(f"Ошибка при выполнении команды mpstat: {e}")
             return {}
 
     @staticmethod
@@ -306,15 +308,9 @@ class CPUsMonitor(BaseObject):
         try:
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
-            print(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
 
-    # def get_item_origin(self, core: str, metric_id: str):
-    #     try:
-    #         return self.cores.get(core).get_metric(metric_id)
-    #     except Exception as e:
-    #         print(f"Ошибка - {core}: {metric_id} - {e}")
-    #         return None
 
 class Core(SubObject):
     def __init__(self):
@@ -368,5 +364,5 @@ class Core(SubObject):
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
         except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
