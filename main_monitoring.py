@@ -61,52 +61,106 @@ atexit.register(cleanup_and_exit)
 
 # ___________________________________
 monitor_configs = [
-    # {
-    #     'name': 'system',
-    #     'monitor_class': SystemMonitor,
-    #     'settings_file': '_settings_file/proc/system.txt',
-    # },
-    # {
-    #     'name': 'cpu',
-    #     'monitor_class': CPUsMonitor,
-    #     'settings_file': '_settings_file/proc/cpu.txt',
-    # },
+    {
+        'name': 'system',
+        'monitor_class': SystemMonitor,
+        'settings_file': '_settings_file/proc/system.txt',
+    },
+    {
+        'name': 'cpu',
+        'monitor_class': CPUsMonitor,
+        'settings_file': '_settings_file/proc/cpu.txt',
+    },
     # {
     #     'name': 'gpu',
     #     'monitor_class': GPUsMonitor,
     #     'settings_file': '_settings_file/proc/gpu.txt',
     # },
-    # {
-    #     'name': 'lvol',
-    #     'monitor_class': LvolsMonitor,
-    #     'settings_file': '_settings_file/proc/lvol.txt',
-    # },
-    # {
-    #     'name': 'disk',
-    #     'monitor_class': DisksMonitor,
-    #     'settings_file': '_settings_file/proc/disk.txt',
-    # },
-    # {
-    #     'name': 'if',
-    #     'monitor_class': EthPortMonitor,
-    #     'settings_file': '_settings_file/proc/if.txt',
-    # },
+    {
+        'name': 'lvol',
+        'monitor_class': LvolsMonitor,
+        'settings_file': '_settings_file/proc/lvol.txt',
+    },
+    {
+        'name': 'disk',
+        'monitor_class': DisksMonitor,
+        'settings_file': '_settings_file/proc/disk.txt',
+    },
+    {
+        'name': 'if',
+        'monitor_class': EthPortMonitor,
+        'settings_file': '_settings_file/proc/if.txt',
+    },
     # {
     #     'name': 'f_a',
     #     'monitor_class': FreonA,
     #     'settings_file': '_settings_file/proc/f_a.txt',
     # },
-    {
-        'name': 'f_b',
-        'monitor_class': FreonB,
-        'settings_file': '_settings_file/proc/f_b.txt',
-    },
     # {
-    #     'name': 'switch1',
-    #     'monitor_class': Switch,
-    #     'settings_file': '_settings_file/proc/switch1.txt',
-    #     'ip': "10.70.0.250"
-    # }
+    #     'name': 'f_b',
+    #     'monitor_class': FreonB,
+    #     'settings_file': '_settings_file/proc/f_b.txt',
+    # },
+    {
+        'name': 'switch_dlink_dgs_1210_28x_me_0',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_28x_me_0.txt',
+        'ip': "10.70.0.250"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_0',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_0.txt',
+        'ip': "192.168.0.201"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_1',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_1.txt',
+        'ip': "192.168.0.202"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_2',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_2.txt',
+        'ip': "192.168.0.203"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_3',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_3.txt',
+        'ip': "192.168.0.204"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_4',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_4.txt',
+        'ip': "192.168.0.205"
+    },
+    {
+        'name': 'switch_mikrotik_crS312_4c_8xg_rm_5',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_5.txt',
+        'ip': "192.168.0.206"
+    },
+    {
+        'name': 'switch_dlink_dgs_1210_52_me_0',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_0.txt',
+        'ip': "10.90.90.91"
+    },
+    {
+        'name': 'switch_dlink_dgs_1210_52_me_1',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_1.txt',
+        'ip': "10.90.90.92"
+    },
+    {
+        'name': 'switch_dlink_dgs_1210_52_me_2',
+        'monitor_class': Switch,
+        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_2.txt',
+        'ip': "10.90.90.93"
+    },
 ]
 # ___________________________________
 

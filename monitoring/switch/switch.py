@@ -103,7 +103,7 @@ class Switch(BaseObject):
         for idx in range(iface_cnt):
             self.interfaces[str(idx)] = Interface()
             self.interfaces_info[idx] = f"switch:{self._system_id}:{idx}"
-        self.interfaces_info["connection"] = "switch:connection"
+        self.interfaces_info["connection"] = "switch:0:connection"
         logger_monitoring.info(f"Порядковый номер коммутатора в системе {self._system_id}")
 
     def _snmp_get(self, oid: str):

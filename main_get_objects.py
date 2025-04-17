@@ -71,16 +71,26 @@ def monitor_start(monitor_class, tag, ip_addr = None):
 def main():
     logger_monitoring.info("- - -" * 10)
     monitors = [
-        # (CPUsMonitor, 'cpu'),
+        (CPUsMonitor, 'cpu'),
         # (GPUsMonitor, 'gpu'),
-        # (SystemMonitor, 'system'),
-        # (LvolsMonitor, 'lvol'),
-        # (DisksMonitor, 'disk'),
-        # (EthPortMonitor, 'if'),
+        (SystemMonitor, 'system'),
+        (LvolsMonitor, 'lvol'),
+        (DisksMonitor, 'disk'),
+        (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
-        (FreonB, 'f_b'),
-        # (Switch, 'switch1', '10.70.0.250'),
-        # (Switch, 'switch2', '')
+        # (FreonB, 'f_b'),
+        (Switch, 'switch_dlink_dgs_1210_28x_me_0', '10.70.0.250'), # Это из схемы
+
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_0', '192.168.0.201'), # Это из схемы
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_1', '192.168.0.202'),  # Это из схемы
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_2', '192.168.0.203'),  # Это из схемы
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_3', '192.168.0.204'),  # Это из схемы
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_4', '192.168.0.205'),  # Это из схемы
+        (Switch, 'switch_mikrotik_crS312_4c_8xg_rm_5', '192.168.0.206'),  # Это из схемы
+
+        (Switch, 'switch_dlink_dgs_1210_52_me_0', '10.90.90.91'),  # Это из схемы
+        (Switch, 'switch_dlink_dgs_1210_52_me_1', '10.90.90.92'),  # Это из схемы
+        (Switch, 'switch_dlink_dgs_1210_52_me_2', '10.90.90.93'),  # Это из схемы
     ]
     for line in monitors:
         if len(line) == 2:
