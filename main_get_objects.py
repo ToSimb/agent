@@ -1,15 +1,15 @@
 from monitoring.service import (measure_execution_time,
                                 open_file,
                                 save_file_data)
-from monitoring.cpu.cpu import CPUsMonitor
-from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
-from monitoring.system.system import SystemMonitor
-from monitoring.eth_port.eth_port import EthPortMonitor
-from monitoring.lvol.lvol import LvolsMonitor
-from monitoring.disk.disk import DisksMonitor
-from monitoring.switch.switch import Switch
-from monitoring.freon_a.freon_a import FreonA
-from monitoring.freon_b.freon_b import FreonB
+#from monitoring.cpu.cpu import CPUsMonitor
+#from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+#from monitoring.system.system import SystemMonitor
+#from monitoring.eth_port.eth_port import EthPortMonitor
+#from monitoring.lvol.lvol import LvolsMonitor
+from monitoring.disk.disk_new import DisksMonitor
+#from monitoring.switch.switch import Switch
+#from monitoring.freon_a.freon_a import FreonA
+#from monitoring.freon_b.freon_b import FreonB
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -75,11 +75,11 @@ def main():
         # (GPUsMonitor, 'gpu'),
         # (SystemMonitor, 'system'),
         # (LvolsMonitor, 'lvol'),
-        # (DisksMonitor, 'disk'),
+        (DisksMonitor, 'disk'),
         # (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
         # (FreonB, 'f_b'),
-        (Switch, 'switch1', '10.70.0.250'),
+        # (Switch, 'switch1', '10.70.0.250'),
         # (Switch, 'switch2', '')
     ]
     for line in monitors:

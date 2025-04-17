@@ -86,7 +86,7 @@ class FreonB(BaseObject):
                 if index_vu in self.vus:
                     # path_id = f"fb:{int(file_dict[index_vu]['x'])-1}:{int(file_dict[index_vu]['y'])-1}"
                     index_vu_int = (int(file_dict[index_vu]['y'])-1) + (int(file_dict[index_vu]['x'])-1)*20
-                    path_id =f"fb:{index_vu_int}"
+                    path_id = f"fb:{index_vu_int}"
                     self.vus_info[index_vu] = path_id
                     self.vus_info[f'connection:{index_vu_int}'] = f'{path_id}:connection'
                     for index in range(COUNT_BOARDS):

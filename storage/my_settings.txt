@@ -1,0 +1,5 @@
+{
+    "scheme_revision": 1,
+    "user_query_interval_revision": 57,
+    "rest_client_start": false
+}

@@ -13,7 +13,7 @@ from pysnmp.hlapi import (
     bulkCmd,
 )
 from monitoring.base import BaseObject, SubObject
-
+from logger.logger_monitoring import logger_monitoring
 
 class Switch(BaseObject):
     def __init__(self, ip: str):
@@ -36,9 +36,7 @@ class Switch(BaseObject):
         self._community = "public"
 
         self._load_config()
-
         self._refresh_state(first_run=True)
-
 
     def update(self) -> None:
         self._refresh_state()
@@ -49,10 +47,10 @@ class Switch(BaseObject):
     def create_index(self, switch_dict):
         for index, idx_val in switch_dict.items():
             if idx_val is None:
-                print(f"Для индекса {index} нет значения")
+                logger_monitoring.debug(f"Для индекса {index} нет значения")
                 continue
 
-            if index == "connection":
+            if "connection" in index:
                 self.connection_id = idx_val
                 continue
 
@@ -60,7 +58,7 @@ class Switch(BaseObject):
                 if value == index:
                     self.item_index[str(idx_val)] = self.interfaces[key]
                     break
-        print("Индексы для коммутаторов обновлены")
+        logger_monitoring.info("Индексы для коммутаторов обновлены")
 
     def get_all(self):
         return [{i: iface.get_params_all()} for i, iface in self.interfaces.items()]
@@ -71,9 +69,8 @@ class Switch(BaseObject):
                 return self.connection_value
             return self.item_index[item_id].get_metric(metric_id)
         except Exception as err:
-            print(f"Ошибка получения {item_id}:{metric_id} — {err}")
+            logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}:{metric_id} — {err}")
             return None
-
 
     def _load_config(self):
         cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "switches.json")
@@ -81,15 +78,15 @@ class Switch(BaseObject):
             with open(cfg_path, encoding="utf‑8‑sig") as fp:
                 data = json.load(fp)
         except FileNotFoundError:
-            print(f"Файл конфигурации не найден: {cfg_path}. Коммутатор: {self.ip}")
+            logger_monitoring.error(f"Файл конфигурации не найден: {cfg_path}. Коммутатор: {self.ip}")
             return
         except json.JSONDecodeError as e:
-            print(f"Ошибка JSON в {cfg_path}: {e}. Коммутатор: {self.ip}")
+            logger_monitoring.error(f"Ошибка JSON в {cfg_path}: {e}. Коммутатор: {self.ip}")
             return
 
         cfg = next((d for d in data.get("switches", []) if d.get("ip") == self.ip), {})
         if not cfg:
-            print(f"Коммутатор {self.ip} отсутствует в конфигурации")
+            logger_monitoring.error(f"Коммутатор {self.ip} отсутствует в конфигурации")
             return
 
         self._model = cfg.get("model", "")
@@ -101,14 +98,13 @@ class Switch(BaseObject):
         self._target = UdpTransportTarget((self.ip, snmp_port), timeout=1, retries=1)
 
         if len(self._oids_map) != 6:
-            print(f"В конфигурации {self.ip}: OID‑ов {len(self._oids_map)}, а не 6")
+            logger_monitoring.debug(f"В конфигурации {self.ip}: OID‑ов {len(self._oids_map)}, а не 6")
 
         for idx in range(iface_cnt):
             self.interfaces[str(idx)] = Interface()
             self.interfaces_info[idx] = f"switch:{self._system_id}:{idx}"
         self.interfaces_info["connection"] = "switch:connection"
-        print(f"Порядковый номер коммутатора в системе {self._system_id}")
-
+        logger_monitoring.info(f"Порядковый номер коммутатора в системе {self._system_id}")
 
     def _snmp_get(self, oid: str):
         """Безопасный однократный GET."""
@@ -148,7 +144,6 @@ class Switch(BaseObject):
                 yield from var_binds
         except Exception:
             return
-
 
     def _refresh_state(self, *, first_run=False):
         self.connection_value = self._snmp_get("1.3.6.1.2.1.1.3.0") is not None
@@ -234,8 +229,8 @@ class Interface(SubObject):
                 val = self.validate_integer(val)
             return val
         except KeyError:
-            print(f"Метрика {metric_id} отсутствует")
+            logger_monitoring.error(f"Метрика {metric_id} отсутствует")
             return None
         except Exception as err:
-            print(f"Ошибка в get_metric({metric_id}) — {err}")
+            logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

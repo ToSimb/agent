@@ -21,6 +21,7 @@ from monitoring.disk.disk import DisksMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB
+from monitoring.switch.switch import Switch
 from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      insert_params)
@@ -60,46 +61,52 @@ atexit.register(cleanup_and_exit)
 
 # ___________________________________
 monitor_configs = [
-    {
-        'name': 'system',
-        'monitor_class': SystemMonitor,
-        'settings_file': 'monitoring/_settings_file/system_proc.txt',
-    },
-    {
-        'name': 'cpu',
-        'monitor_class': CPUsMonitor,
-        'settings_file': 'monitoring/_settings_file/cpu_proc.txt',
-    },
-    {
-        'name': 'gpu',
-        'monitor_class': GPUsMonitor,
-        'settings_file': 'monitoring/_settings_file/gpu_proc.txt',
-    },
-    {
-        'name': 'lvol',
-        'monitor_class': LvolsMonitor,
-        'settings_file': 'monitoring/_settings_file/lvol_proc.txt',
-    },
-    {
-        'name': 'disk',
-        'monitor_class': DisksMonitor,
-        'settings_file': 'monitoring/_settings_file/disk_proc.txt',
-    },
-    {
-        'name': 'if',
-        'monitor_class': EthPortMonitor,
-        'settings_file': 'monitoring/_settings_file/if_proc.txt',
-    },
     # {
-    #     'name': 'f_a',
-    #     'monitor_class': FreonA,
-    #     'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+    #     'name': 'system',
+    #     'monitor_class': SystemMonitor,
+    #     'settings_file': 'monitoring/_settings_file/system_proc.txt',
     # },
+    # {
+    #     'name': 'cpu',
+    #     'monitor_class': CPUsMonitor,
+    #     'settings_file': 'monitoring/_settings_file/cpu_proc.txt',
+    # },
+    # {
+    #     'name': 'gpu',
+    #     'monitor_class': GPUsMonitor,
+    #     'settings_file': 'monitoring/_settings_file/gpu_proc.txt',
+    # },
+    # {
+    #     'name': 'lvol',
+    #     'monitor_class': LvolsMonitor,
+    #     'settings_file': 'monitoring/_settings_file/lvol_proc.txt',
+    # },
+    # {
+    #     'name': 'disk',
+    #     'monitor_class': DisksMonitor,
+    #     'settings_file': 'monitoring/_settings_file/disk_proc.txt',
+    # },
+    # {
+    #     'name': 'if',
+    #     'monitor_class': EthPortMonitor,
+    #     'settings_file': 'monitoring/_settings_file/if_proc.txt',
+    # },
+    {
+        'name': 'f_a',
+        'monitor_class': FreonA,
+        'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+    },
     # {
     #     'name': 'f_b',
     #     'monitor_class': FreonB,
     #     'settings_file': 'monitoring/_settings_file/f_b_proc.txt',
-    # }
+    # },
+    {
+        'name': 'switch1',
+        'monitor_class': Switch,
+        'settings_file': 'monitoring/_settings_file/switch1_proc.txt',
+        'ip': "10.70.0.250"
+    }
 ]
 # ___________________________________
 
@@ -148,8 +155,11 @@ def main():
         items_agent_reg_response = crate_items_agent_reg_response()
         for config in monitor_configs:
             monitor_class = config['monitor_class']
-
-            monitor = monitor_class()
+            ip_true = config.get('ip', None)
+            if ip_true is None:
+                monitor = monitor_class()
+            else:
+                monitor = monitor_class(ip_true)
             monitor.update_interval = 1
             monitor.interval_lock = threading.Lock()
             index_list = create_index_for_any(items_agent_reg_response, config['settings_file'], monitor)
