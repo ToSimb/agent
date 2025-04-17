@@ -4,9 +4,11 @@ import os
 from monitoring.base import BaseObject, SubObject
 
 from logger.logger_monitoring import logger_monitoring
+from config import (URL_FA, DEBUG_MODE)
 
-URL = f"http://127.0.0.1:8080/freon/22"
-# URL = f"http://192.168.123.61:9002/api/v1/system"
+if DEBUG_MODE:
+    URL_FA = f"http://127.0.0.1:8080/freon/22"
+
 
 HASH_STATE = {
     "started": "OK",
@@ -50,28 +52,26 @@ class FreonA(BaseObject):
         file_name = script_dir + "/freon_dict.txt"
         self.vus = {}
         self.vus_info = {}
-        self.conn = False
+        self.conn = "FATAL"
         self.connection = -1
         self.item_index = {}
         fa = self.__send_req()
         if fa is not None:
-            self.conn = True
-            for i in fa["rows"]:
-                if i["name"]:
-                    self.vus[i["name"]] = Board_fa(i["name"])
-                    units_T, units_U, units_I = self.vus[i["name"]].get_all_obj()
-                    for index_T in units_T.keys():
-                        self.vus[f"{i['name']}:T:{index_T}"] = units_T[index_T]
-                    for index_U in units_U.keys():
-                        self.vus[f"{i['name']}:U:{index_U}"] = units_U[index_U]
-                    for index_I in units_I.keys():
-                        self.vus[f"{i['name']}:I:{index_I}"] = units_I[index_I]
-                else:
-                    logger_monitoring.error("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-А!")
+            self.conn = "OK"
         else:
             logger_monitoring.error("нет соединения с Ф-А при init")
+
         file_dict = self.__open_dict(file_name)
         if file_dict is not None:
+            for i in file_dict.keys():
+                self.vus[i] = Board_fa(i)
+                units_T, units_U, units_I = self.vus[i].get_all_obj()
+                for index_T in units_T.keys():
+                    self.vus[f"{i}:T:{index_T}"] = units_T[index_T]
+                for index_U in units_U.keys():
+                    self.vus[f"{i}:U:{index_U}"] = units_U[index_U]
+                for index_I in units_I.keys():
+                    self.vus[f"{i}:I:{index_I}"] = units_I[index_I]
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
                     path = f"fa:{file_dict[index_vu]['x']-1}:{self.__get_address_full_board(int(file_dict[index_vu]['y']))}"
@@ -125,7 +125,7 @@ class FreonA(BaseObject):
     @staticmethod
     def __send_req():
         try:
-            response = requests.get(URL)
+            response = requests.get(URL_FA)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -163,12 +163,12 @@ class FreonA(BaseObject):
     def update(self):
         fa = self.__send_req()
         if fa is not None:
-            self.conn = True
+            self.conn = "OK"
             for i in fa["rows"]:
                 if i["name"]:
                     self.vus[i["name"]].update(i)
         else:
-            self.conn = False
+            self.conn = "FATAL"
 
     def get_all(self):
         """

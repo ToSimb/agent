@@ -38,7 +38,7 @@ class DisksMonitor(BaseObject):
             disk.update(disks_speed[key])
 
     def get_all(self):
-        return [{index: gpu.get_params_all()} for index, gpu in self.disks.items()]
+        return [{index: obj.get_params_all()} for index, obj in self.disks.items()]
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:

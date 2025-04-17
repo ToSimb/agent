@@ -64,7 +64,7 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
             item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
         elif 'voltage' in item_full_path.split('/')[-1]:
             item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
-        elif 'connection' in item_full_path.split('/')[-1]:
+        elif 'device_connection' in item_full_path.split('/')[-1]:
             item_path[f"fb:{numbers[-2]}:connection"] = item_full_path
 
 # print("Пути из схемы:")
@@ -72,7 +72,7 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
 #     print(item)
 
 
-folder_path = 'monitoring/_settings_file'
+folder_path = '_settings_file/_settings_file'
 
 files = os.listdir(folder_path)
 for file_name in files:
@@ -91,3 +91,4 @@ for file_name in files:
             save_file_data(f'{folder_path}/{file_name}', obj_raw)
             print(f"ФАЙЛ {file_name} изменен!")
             print(f"Не хватает описания для {len(no_path)}")
+            # print(f"Не хватает описания для {no_path}")

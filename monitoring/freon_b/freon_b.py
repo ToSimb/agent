@@ -4,9 +4,11 @@ import os
 from monitoring.base import BaseObject, SubObject
 
 from logger.logger_monitoring import logger_monitoring
+from config import (URL_FB, DEBUG_MODE)
 
-URL = f"http://127.0.0.1:8080/freon/25_2"
-# URL = f"http://192.168.0.101:9002/api/v1/system"
+if DEBUG_MODE:
+    URL_FB = f"http://127.0.0.1:8080/freon/25_2"
+
 COUNT_BOARDS = 6
 COUNT_SENSOR_T = 13
 COUNT_SENSOR_U = 14
@@ -63,25 +65,23 @@ class FreonB(BaseObject):
         fb = self.__send_req()
         if fb is not None:
             self.conn = "OK"
-            for i in fb["rows"]:
-                if i["name"]:
-                    self.vus[i["name"]] = Vu_fb(i["name"])
-                    boards = self.vus[i["name"]].get_all_obj()
-                    for index in range(len(boards)):
-                        self.vus[f"{i['name']}:board:{index}"] = boards[index]
-                        units_T, units_U, units_I = boards[index].get_all_obj()
-                        for index_T in range(COUNT_SENSOR_T):
-                            self.vus[f"{i['name']}:board:{index}:T:{index_T}"] = units_T[index_T]
-                        for index_U in range(COUNT_SENSOR_U):
-                            self.vus[f"{i['name']}:board:{index}:U:{index_U}"] = units_U[index_U]
-                        for index_I in range(COUNT_SENSOR_I):
-                            self.vus[f"{i['name']}:board:{index}:I:{index_I}"] = units_I[index_I]
-                else:
-                    logger_monitoring.error("ПРОБЛЕМА С ОТВЕТОМ ОТ Ф-Б!")
         else:
             logger_monitoring.error("нет соединения с Ф-Б при init")
         file_dict = self.__open_dict(file_name)
+
         if file_dict is not None:
+            for i in file_dict.keys():
+                self.vus[i] = Vu_fb(i)
+                boards = self.vus[i].get_all_obj()
+                for index in range(len(boards)):
+                    self.vus[f"{i}:board:{index}"] = boards[index]
+                    units_T, units_U, units_I = boards[index].get_all_obj()
+                    for index_T in range(COUNT_SENSOR_T):
+                        self.vus[f"{i}:board:{index}:T:{index_T}"] = units_T[index_T]
+                    for index_U in range(COUNT_SENSOR_U):
+                        self.vus[f"{i}:board:{index}:U:{index_U}"] = units_U[index_U]
+                    for index_I in range(COUNT_SENSOR_I):
+                        self.vus[f"{i}:board:{index}:I:{index_I}"] = units_I[index_I]
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
                     # path_id = f"fb:{int(file_dict[index_vu]['x'])-1}:{int(file_dict[index_vu]['y'])-1}"
@@ -121,7 +121,7 @@ class FreonB(BaseObject):
     @staticmethod
     def __send_req():
         try:
-            response = requests.get(URL)
+            response = requests.get(URL_FB)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -154,7 +154,6 @@ class FreonB(BaseObject):
                             break
                     else:
                         logger_monitoring.error(f'Для индекса {index} нет значения')
-        print(self.connection)
 
     def update(self):
         fb = self.__send_req()
@@ -179,7 +178,7 @@ class FreonB(BaseObject):
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
             if item_id in self.connection:
-                if metric_id == "connection.agent":
+                if metric_id == "connection.state":
                     return self.validate_state(self.conn)
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
