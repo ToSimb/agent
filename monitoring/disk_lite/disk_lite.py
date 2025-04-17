@@ -1,16 +1,20 @@
 import platform
 import subprocess
+import shutil
 from monitoring.base import BaseObject, SubObject
 
 from logger.logger_monitoring import logger_monitoring
 
-class DisksLigthMonitor(BaseObject):
+class DisksLiteMonitor(BaseObject):
     def __init__(self):
         super().__init__()
         self.disks = {}
         self.disks_info = {}
         self.item_index = {}
         self.system = platform.system()
+        self.iostat_available = shutil.which("iostat") is not None
+        self.wmic_available = shutil.which("wmic") is not None
+
 
         disks_list = []
         if self.system == "Linux":

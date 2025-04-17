@@ -18,6 +18,7 @@ from monitoring.cpu.cpu import CPUsMonitor
 from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk import DisksMonitor
+from monitoring.disk_lite.disk_lite import DisksLiteMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB

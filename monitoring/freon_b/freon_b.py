@@ -129,8 +129,6 @@ class FreonB(BaseObject):
             return None
 
     def get_objects_description(self):
-        with open("1.json", "w") as f:
-            json.dump(self.vus_info, f)
         return self.vus_info
 
     def create_index(self, fb_dict):

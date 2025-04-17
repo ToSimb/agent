@@ -23,9 +23,7 @@ class DisksMonitor(BaseObject):
             result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding)
             result_json = json.loads(result)
             all_disks = result_json.get("devices", [])
-            print(all_disks)
             for dev in all_disks:
-                print(all_disks)
                 name = dev.get("name")
                 dev_type = dev.get("type")
                 if dev_type not in ["ata", "nvme", "scsi"]:
@@ -240,7 +238,3 @@ class Disk(SubObject):
         except Exception as e:
             logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
-
-a = DisksMonitor()
-a.update()
-print(a.get_all())
