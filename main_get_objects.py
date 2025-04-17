@@ -1,15 +1,15 @@
 from monitoring.service import (measure_execution_time,
                                 open_file,
                                 save_file_data)
-#from monitoring.cpu.cpu import CPUsMonitor
-#from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
-#from monitoring.system.system import SystemMonitor
-#from monitoring.eth_port.eth_port import EthPortMonitor
-#from monitoring.lvol.lvol import LvolsMonitor
+from monitoring.cpu.cpu import CPUsMonitor
+from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+from monitoring.system.system import SystemMonitor
+from monitoring.eth_port.eth_port import EthPortMonitor
+from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk_new import DisksMonitor
-#from monitoring.switch.switch import Switch
-#from monitoring.freon_a.freon_a import FreonA
-#from monitoring.freon_b.freon_b import FreonB
+from monitoring.switch.switch import Switch
+from monitoring.freon_a.freon_a import FreonA
+from monitoring.freon_b.freon_b import FreonB
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -43,7 +43,7 @@ def monitor_start(monitor_class, tag, ip_addr = None):
     objects_descr, time_get_obj = measure_execution_time(monitor_instance.get_objects_description)
     data, time_data = measure_execution_time(monitor_instance.get_all)
 
-    settings_file = f'monitoring/_settings_file/{tag}_raw.txt'
+    settings_file = f'_settings_file/raw/{tag}.txt'
 
     objects_key_old = open_file(settings_file)
     objects_key = {}
@@ -64,7 +64,7 @@ def monitor_start(monitor_class, tag, ip_addr = None):
                             f"      Get data time:         {time_data}\n"
                             + " * " * 10)
 
-    data_file = f'monitoring/_params_all_objs/{tag}_data.txt'
+    data_file = f'_settings_file/data/{tag}.txt'
     save_file_data(data_file, data)
 
 
@@ -75,10 +75,10 @@ def main():
         # (GPUsMonitor, 'gpu'),
         # (SystemMonitor, 'system'),
         # (LvolsMonitor, 'lvol'),
-        (DisksMonitor, 'disk'),
+        # (DisksMonitor, 'disk'),
         # (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
-        # (FreonB, 'f_b'),
+        (FreonB, 'f_b'),
         # (Switch, 'switch1', '10.70.0.250'),
         # (Switch, 'switch2', '')
     ]

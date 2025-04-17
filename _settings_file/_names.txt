@@ -1,0 +1,61 @@
+{
+    "disk": [
+        {
+            "device": "/dev/nvme0",
+            "model": "Unknown",
+            "serial": "Unknown"
+        }
+    ],
+    "gpu": [],
+    "cpu": [
+        "0: AMD Ryzen 5 3500U with Radeon Vega Mobile Gfx"
+    ],
+    "interface": [
+        {
+            "name": "lo",
+            "ipv4": "127.0.0.1"
+        },
+        {
+            "name": "enx02030a626336",
+            "ipv4": "192.168.100.171"
+        },
+        {
+            "name": "docker0",
+            "ipv4": "172.17.0.1"
+        },
+        {
+            "name": "br-78ef15000700",
+            "ipv4": "172.18.0.1"
+        },
+        {
+            "name": "br-dc036e5e2278",
+            "ipv4": "172.19.0.1"
+        },
+        {
+            "name": "wlp1s0",
+            "ipv4": null
+        },
+        {
+            "name": "enx00e04c6804bf",
+            "ipv4": null
+        }
+    ],
+    "lvol": [
+        {
+            "device": "/dev/sda2",
+            "mountpoint": "/",
+            "fstype": "ext4",
+            "total": 490561007616,
+            "used": 408809652224,
+            "free": 56757043200
+        },
+        {
+            "device": "/dev/sda1",
+            "mountpoint": "/boot/efi",
+            "fstype": "vfat",
+            "total": 502288384,
+            "used": 6377472,
+            "free": 495910912
+        }
+    ]
+}

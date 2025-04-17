@@ -174,6 +174,6 @@ def collect_device_info():
 
 if __name__ == "__main__":
     devices = collect_device_info()
-    with open("_settings_file/_names.txt", "w", encoding="utf-8") as f:
+    with open("_names.txt", "w", encoding="utf-8") as f:
         json.dump(devices, f, indent=4, ensure_ascii=False)
     print("Информация успешно сохранена в файл settings_file")

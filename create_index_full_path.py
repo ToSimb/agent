@@ -72,23 +72,23 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
 #     print(item)
 
 
-folder_path = '_settings_file/_settings_file'
+folder_path1 = '_settings_file/raw'
+folder_path2 = '_settings_file/proc'
 
-files = os.listdir(folder_path)
+files = os.listdir(folder_path1)
 for file_name in files:
-    if 'raw' in file_name:
-        no_path = []
-        status_update = False
-        obj_raw = open_file(f'{folder_path}/{file_name}')
-        for item_key, item_data in obj_raw.items():
-            if item_key in item_path:
-                obj_raw[item_key] = item_path[item_key]
-                status_update = True
-            else:
-                no_path.append(item_key)
-        if status_update:
-            file_name = file_name.replace('raw', 'proc')
-            save_file_data(f'{folder_path}/{file_name}', obj_raw)
-            print(f"ФАЙЛ {file_name} изменен!")
-            print(f"Не хватает описания для {len(no_path)}")
-            # print(f"Не хватает описания для {no_path}")
+    print(file_name)
+    no_path = []
+    status_update = False
+    obj_raw = open_file(f'{folder_path1}/{file_name}')
+    for item_key, item_data in obj_raw.items():
+        if item_key in item_path:
+            obj_raw[item_key] = item_path[item_key]
+            status_update = True
+        else:
+            no_path.append(item_key)
+    if status_update:
+        save_file_data(f'{folder_path2}/{file_name}', obj_raw)
+        print(f"ФАЙЛ {file_name} изменен!")
+        print(f"Не хватает описания для {len(no_path)}")
+        # print(f"Не хватает описания для {no_path}")

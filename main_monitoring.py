@@ -64,49 +64,49 @@ monitor_configs = [
     # {
     #     'name': 'system',
     #     'monitor_class': SystemMonitor,
-    #     'settings_file': 'monitoring/_settings_file/system_proc.txt',
+    #     'settings_file': '_settings_file/proc/system.txt',
     # },
     # {
     #     'name': 'cpu',
     #     'monitor_class': CPUsMonitor,
-    #     'settings_file': 'monitoring/_settings_file/cpu_proc.txt',
+    #     'settings_file': '_settings_file/proc/cpu.txt',
     # },
     # {
     #     'name': 'gpu',
     #     'monitor_class': GPUsMonitor,
-    #     'settings_file': 'monitoring/_settings_file/gpu_proc.txt',
+    #     'settings_file': '_settings_file/proc/gpu.txt',
     # },
     # {
     #     'name': 'lvol',
     #     'monitor_class': LvolsMonitor,
-    #     'settings_file': 'monitoring/_settings_file/lvol_proc.txt',
+    #     'settings_file': '_settings_file/proc/lvol.txt',
     # },
     # {
     #     'name': 'disk',
     #     'monitor_class': DisksMonitor,
-    #     'settings_file': 'monitoring/_settings_file/disk_proc.txt',
+    #     'settings_file': '_settings_file/proc/disk.txt',
     # },
     # {
     #     'name': 'if',
     #     'monitor_class': EthPortMonitor,
-    #     'settings_file': 'monitoring/_settings_file/if_proc.txt',
+    #     'settings_file': '_settings_file/proc/if.txt',
+    # },
+    # {
+    #     'name': 'f_a',
+    #     'monitor_class': FreonA,
+    #     'settings_file': '_settings_file/proc/f_a.txt',
     # },
     {
-        'name': 'f_a',
-        'monitor_class': FreonA,
-        'settings_file': 'monitoring/_settings_file/f_a_proc.txt',
+        'name': 'f_b',
+        'monitor_class': FreonB,
+        'settings_file': '_settings_file/proc/f_b.txt',
     },
     # {
-    #     'name': 'f_b',
-    #     'monitor_class': FreonB,
-    #     'settings_file': 'monitoring/_settings_file/f_b_proc.txt',
-    # },
-    {
-        'name': 'switch1',
-        'monitor_class': Switch,
-        'settings_file': 'monitoring/_settings_file/switch1_proc.txt',
-        'ip': "10.70.0.250"
-    }
+    #     'name': 'switch1',
+    #     'monitor_class': Switch,
+    #     'settings_file': '_settings_file/proc/switch1.txt',
+    #     'ip': "10.70.0.250"
+    # }
 ]
 # ___________________________________
 
