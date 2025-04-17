@@ -23,6 +23,7 @@ class DisksMonitor(BaseObject):
             result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding)
             result_json = json.loads(result)
             all_disks = result_json.get("devices", [])
+            print(all_disks)
             for dev in all_disks:
                 print(all_disks)
                 name = dev.get("name")
@@ -30,6 +31,7 @@ class DisksMonitor(BaseObject):
                 if dev_type not in ["ata", "nvme", "scsi"]:
                     continue
                 self.disks[name] = Disk(name, dev_type)
+
                 self.disks_info[name] = f"disk:{len(self.disks) - 1}"
         except Exception as e:
             logger_monitoring.error(f"Ошибка выполнения команды smartctl --scan: {e}")
@@ -238,3 +240,7 @@ class Disk(SubObject):
         except Exception as e:
             logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
+
+a = DisksMonitor()
+a.update()
+print(a.get_all())

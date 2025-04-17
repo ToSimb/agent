@@ -25,6 +25,9 @@ PORT = config.get('network', 'port')
 # storage
 RETENTION_TIME_S = config.getint('storage', 'retention_time_s')
 
+# freon
+URL_FA = config.get('freon', 'url_fa')
+URL_FB = config.get('freon', 'url_fb')
 
 def update_config():
     config['settings']['reupload_agent_scheme'] = 'false'

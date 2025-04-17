@@ -55,22 +55,24 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
                 item_path[f"fa:{index}:{numbers[-2]}:{numbers[-1]}"] = item_full_path
     elif 'vu_fb_20' in item_full_path:
         if 'vu_fb_20' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-2]}:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-1]}"] = item_full_path
         elif 'board_fb' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-3]}:{numbers[-2]}:board:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-2]}:board:{numbers[-1]}"] = item_full_path
         elif 'temperature' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:T:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:T:{numbers[-1]}"] = item_full_path
         elif 'current' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
         elif 'voltage' in item_full_path.split('/')[-1]:
-            item_path[f"fb:{numbers[-4]}:{numbers[-3]}:board:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
+            item_path[f"fb:{numbers[-3]}:board:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
+        elif 'device_connection' in item_full_path.split('/')[-1]:
+            item_path[f"fb:{numbers[-2]}:connection"] = item_full_path
 
 # print("Пути из схемы:")
 # for item in item_path:
 #     print(item)
 
 
-folder_path = 'monitoring/_settings_file'
+folder_path = '_settings_file/_settings_file'
 
 files = os.listdir(folder_path)
 for file_name in files:
@@ -89,3 +91,4 @@ for file_name in files:
             save_file_data(f'{folder_path}/{file_name}', obj_raw)
             print(f"ФАЙЛ {file_name} изменен!")
             print(f"Не хватает описания для {len(no_path)}")
+            # print(f"Не хватает описания для {no_path}")
