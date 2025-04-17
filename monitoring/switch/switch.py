@@ -1,5 +1,7 @@
 import json
 import os
+from typing import Dict, Any, Optional, Iterable
+
 from pysnmp.hlapi import (
     SnmpEngine,
     CommunityData,
@@ -8,239 +10,232 @@ from pysnmp.hlapi import (
     ObjectType,
     ObjectIdentity,
     getCmd,
-    nextCmd
+    bulkCmd,
 )
 from monitoring.base import BaseObject, SubObject
 
+
 class Switch(BaseObject):
     def __init__(self, ip: str):
-        print(ip)
         super().__init__()
         self.ip = ip
-        self.system_id = None
-        self.model = None
-        self.snmp_port = None
-        self.oids_map = {}
-        self.community = None
-        self.interfaces = {}
-        self.interfaces_info = {}
-        self.item_index = {}
-        self.index_interface = {}
-        self.connection_value = None
-        self.connection_id = -1
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = script_dir + "/switches.json"
 
-        config = self.__load_config(file_name)
-        if not config:
-            print(f"Не удалось загрузить конфигурацию коммутатора {ip} из {file_name}")
-            return
+        self.connection_value: Optional[bool] = None
+        self.interfaces: Dict[str, "Interface"] = {}
+        self.interfaces_info: Dict[Any, str] = {}
+        self.item_index: Dict[str, "Interface"] = {}
+        self.connection_id: int = -1
 
-        current_switch = next((dt for dt in config.get("switches", []) if dt.get("ip", "") == ip), None)
-        if not current_switch:
-            print(f"Коммутатор с IP {ip} не найден в конфигурации.")
-            return
+        self._oids_map: Dict[str, str] = {}
+        self._index_interface: Dict[str, str] = {}
+        self._model: str = ""
+        self._system_id: str = ""
 
-        self.model = current_switch.get("model", "")
-        self.snmp_port = current_switch.get("snmp_port", 161)
-        self.oids_map = current_switch.get("OIDs", {})
-        self.community = current_switch.get("community", "public")
-        self.system_id = current_switch.get("scheme_number", "")
-        print(f"Порядковый номер коммутатора в системе {self.system_id}")
+        self._engine = SnmpEngine()
+        self._target = None
+        self._community = "public"
 
-        if len(self.oids_map) != 6:
-            print(f"В файле конфигурации указано неверное количество параметров (OID) для {self.ip}.")
+        self._load_config()
 
-        if not self.__check_switch_status():
-            print(f"Ошибка на коммутаторе: {self.ip}. Тестовый запрос SNMP не пройден!")
-            return
-        self.connection_value = True
+        self._refresh_state(first_run=True)
 
-        self.index_interface = self.__get_switch_interfaces()
-        if not self.index_interface:
-            print(f"Ошибка на коммутаторе: {self.ip}. Интерфейсы не найдены!")
-            return
-        for index in self.index_interface.values():
-            self.interfaces[index] = Interface()
-            self.interfaces_info[index] = f"switch:{self.system_id}:{index}"
-        self.interfaces_info['connection'] = "switch:connection"
 
-    @staticmethod
-    def __load_config(file_path: str):
-        try:
-            with open(file_path, 'r', encoding='utf-8-sig') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"Файл конфигурации коммутаторов не найден: {file_path}")
-        except json.JSONDecodeError as e:
-            print(f"Ошибка разбора JSON в файле коммутаторов {file_path}: {e}")
-        return None
-
-    def __check_switch_status(self):
-        """
-        Проверяет работу SNMP на коммутаторе.
-        Возвращает True или False.
-        """
-        iterator = getCmd(
-            SnmpEngine(),
-            CommunityData(self.community, mpModel=1),
-            UdpTransportTarget((self.ip, self.snmp_port), timeout=2.0, retries=2),
-            ContextData(),
-            ObjectType(ObjectIdentity('1.3.6.1.2.1.1.3.0'))  # sysUpTime
-        )
-        errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-        if errorIndication:
-            print(f"Ошибка доступа коммутатора {self.ip}: {errorIndication}")
-            return False
-        elif errorStatus:
-            print(f"Ошибка доступа коммутатора {self.ip}: {errorStatus.prettyPrint()}")
-            return False
-        else:
-            return True
-
-    def __get_switch_interfaces(self):
-        interfaces = {}
-        oid_if_descr = ObjectIdentity('1.3.6.1.2.1.2.2.1.2')
-
-        for (errorIndication,
-             errorStatus,
-             errorIndex,
-             varBinds) in nextCmd(
-                SnmpEngine(),
-                CommunityData(self.community, mpModel=1),
-                UdpTransportTarget((self.ip, self.snmp_port), timeout=1, retries=2),
-                ContextData(),
-                ObjectType(oid_if_descr),
-                lexicographicMode=False
-        ):
-            if errorIndication:
-                print(f"SNMP ошибка на {self.ip} при получении описаний интерфейсов: {errorIndication}")
-                break
-            elif errorStatus:
-                print(f"SNMP ошибка на {self.ip} при получении описаний интерфейсов: {errorStatus.prettyPrint()}")
-                break
-            else:
-                for varBind in varBinds:
-                    oid, value = varBind
-                    if_oid_index = str(oid).split('.')[-1]
-                    # Обработка в зависимости от модели коммутатора
-                    if self.model in ['Mellanox SX6700', 'Mellanox MSX6012F-2BFS']: # F51
-                        if 'IB' in str(value):
-                            processed_value = str(value).split('/')[-1]
-                            interfaces[if_oid_index] = processed_value
-                    elif self.model in ["D-Link DGS-1210-28X/ME"]: # FB стойка
-                        if 'D-Link' in str(value):
-                            processed_value = str(value).split()[-1]
-                            interfaces[if_oid_index] = processed_value
-                    elif self.model in ["MIKROTIK CRS312-4C+8XG-RM"]: # FB по 2 в ванне
-                        pass
-                    elif self.model in ["D-Link DGS-1210-52/ME"]: # FB по 1 в ванне
-                        pass
-                    else:
-                        print(f"Модель {self.model} коммутатора с ip: {self.ip} не поддерживается!")
-        return interfaces
+    def update(self) -> None:
+        self._refresh_state()
 
     def get_objects_description(self):
         return self.interfaces_info
 
     def create_index(self, switch_dict):
-        for index in switch_dict:
-            if switch_dict[index] is not None:
-                if index == 'connection':
-                    self.connection_id = switch_dict[index]
-                else:
-                    for key, value in self.interfaces_info.items():
-                        if value == index:
-                            self.item_index[str(switch_dict[index])] = self.interfaces_info.get(key, None)
-                            break
-            else:
-                print(f'Для индекса {index} нет значения')
+        for index, idx_val in switch_dict.items():
+            if idx_val is None:
+                print(f"Для индекса {index} нет значения")
+                continue
+
+            if index == "connection":
+                self.connection_id = idx_val
+                continue
+
+            for key, value in self.interfaces_info.items():
+                if value == index:
+                    self.item_index[str(idx_val)] = self.interfaces[key]
+                    break
         print("Индексы для коммутаторов обновлены")
 
-    def update(self):
-        result = {}
-        for oid_base, metric_name in self.oids_map.items():
-            oid_obj = ObjectIdentity(oid_base)
-            for (errorIndication,
-                 errorStatus,
-                 errorIndex,
-                 varBinds) in nextCmd(
-                    SnmpEngine(),
-                    CommunityData(self.community, mpModel=1),
-                    UdpTransportTarget((self.ip, self.snmp_port), timeout=1, retries=1),
-                    ContextData(),
-                    ObjectType(oid_obj),
-                    lexicographicMode=False
-            ):
-                if errorIndication:
-                    print(f"SNMP ошибка на {self.ip}: {errorIndication} при попытке получения параметра по OID-{oid_base}")
-                    break
-                elif errorStatus:
-                    print(f"SNMP ошибка на {self.ip}: {errorStatus.prettyPrint()} при попытке получения параметра по OID-{oid_base}")
-                    break
-                else:
-                    for varBind in varBinds:
-                        oid, value = varBind
-                        if_oid_index = str(oid).split('.')[-1]
-                        if_index = self.index_interface.get(if_oid_index)
-                        if if_index is not None:
-                            if if_index not in result.keys():
-                                result[if_index] = {}
-                            result[if_index][metric_name] = value.prettyPrint()
-
-        if result:
-            self.connection_value = True
-            for interface_index, result_line in result.items():
-                if interface_index in self.interfaces:
-                    self.interfaces[interface_index].update(result_line)
-        else:
-            self.connection_value = False
-
     def get_all(self):
-        return_list = []
-        for interface_index, interface_obj in self.interfaces.items():
-            result = interface_obj.get_params_all()
-            return_list.append({interface_index: result})
-        return return_list
+        return [{i: iface.get_params_all()} for i, iface in self.interfaces.items()]
 
-    def get_item_and_metric(self, item_id: str, metric_id:str):
+    def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id in str(self.connection_id) and metric_id == "connection":
+            if item_id == str(self.connection_id) and metric_id == "connection":
                 return self.connection_value
-            return self.item_index.get(item_id).get_metric(metric_id)
-        except Exception as e:
-            print(f"Ошибка получения метрики у {item_id} - {metric_id}: {e}")
+            return self.item_index[item_id].get_metric(metric_id)
+        except Exception as err:
+            print(f"Ошибка получения {item_id}:{metric_id} — {err}")
             return None
 
 
+    def _load_config(self):
+        cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "switches.json")
+        try:
+            with open(cfg_path, encoding="utf‑8‑sig") as fp:
+                data = json.load(fp)
+        except FileNotFoundError:
+            print(f"Файл конфигурации не найден: {cfg_path}. Коммутатор: {self.ip}")
+            return
+        except json.JSONDecodeError as e:
+            print(f"Ошибка JSON в {cfg_path}: {e}. Коммутатор: {self.ip}")
+            return
+
+        cfg = next((d for d in data.get("switches", []) if d.get("ip") == self.ip), {})
+        if not cfg:
+            print(f"Коммутатор {self.ip} отсутствует в конфигурации")
+            return
+
+        self._model = cfg.get("model", "")
+        iface_cnt = cfg.get("port_count", 0)
+        self._oids_map = cfg.get("OIDs", {})
+        self._community = cfg.get("community", "public")
+        self._system_id = cfg.get("scheme_number", "")
+        snmp_port = cfg.get("snmp_port", 161)
+        self._target = UdpTransportTarget((self.ip, snmp_port), timeout=1, retries=1)
+
+        if len(self._oids_map) != 6:
+            print(f"В конфигурации {self.ip}: OID‑ов {len(self._oids_map)}, а не 6")
+
+        for idx in range(iface_cnt):
+            self.interfaces[str(idx)] = Interface()
+            self.interfaces_info[idx] = f"switch:{self._system_id}:{idx}"
+        self.interfaces_info["connection"] = "switch:connection"
+        print(f"Порядковый номер коммутатора в системе {self._system_id}")
+
+
+    def _snmp_get(self, oid: str):
+        """Безопасный однократный GET."""
+        try:
+            error_ind, error_stat, _, var_binds = next(
+                getCmd(
+                    self._engine,
+                    CommunityData(self._community, mpModel=1),
+                    self._target,
+                    ContextData(),
+                    ObjectType(ObjectIdentity(oid)),
+                )
+            )
+            if error_ind or error_stat:
+                raise RuntimeError(error_ind or error_stat.prettyPrint())
+            return var_binds[0][1]
+        except Exception as e:
+            return None
+
+    def _snmp_bulk(self, oid: str, max_reps=25) -> Iterable:
+        """
+        GETBULK‑обход под‑дерева. На ошибке даёт пустой результат.
+        """
+        try:
+            for err_ind, err_stat, _, var_binds in bulkCmd(
+                self._engine,
+                CommunityData(self._community, mpModel=1),
+                self._target,
+                ContextData(),
+                0,
+                max_reps,
+                ObjectType(ObjectIdentity(oid)),
+                lexicographicMode=False,
+            ):
+                if err_ind or err_stat:
+                    raise RuntimeError(err_ind or err_stat.prettyPrint())
+                yield from var_binds
+        except Exception:
+            return
+
+
+    def _refresh_state(self, *, first_run=False):
+        self.connection_value = self._snmp_get("1.3.6.1.2.1.1.3.0") is not None
+        if not self.connection_value:
+            for iface in self.interfaces.values():
+                iface.reset()
+            return
+
+        if (first_run or not self._index_interface) and self.connection_value:
+            self._index_interface = self._discover_indices()
+
+        aggregated: Dict[str, Dict[str, str]] = {}
+        for base_oid, metric in self._oids_map.items():
+            for oid, val in self._snmp_bulk(base_oid):
+                idx_snmp = str(oid).split(".")[-1]
+                idx_iface = self._index_interface.get(idx_snmp)
+                if idx_iface is None:
+                    continue
+                aggregated.setdefault(idx_iface, {})[metric] = val.prettyPrint()
+
+        for i, iface in self.interfaces.items():
+            iface.update(aggregated.get(i, {}))
+
+    def _discover_indices(self) -> Dict[str, str]:
+        """Строим соответствие «SNMP‑index ⇢ порт коммутатора»."""
+        mapping: Dict[str, str] = {}
+        for oid, val in self._snmp_bulk("1.3.6.1.2.1.2.2.1.2"):  # ifDescr
+            idx = str(oid).split(".")[-1]
+            port = self._normalize_descr(str(val))
+            if port is not None:
+                mapping[idx] = port
+        return mapping
+
+    def _normalize_descr(self, descr: str) -> Optional[str]:
+        try:
+            if self._model in {"Mellanox SX6700", "Mellanox MSX6012F-2BFS"}:
+                if "IB" in descr:
+                    return str(int(descr.split("/")[-1]) - 1)
+            elif self._model in {"D-Link DGS-1210-28X/ME", "D-Link DGS-1210-52/ME"}:
+                if "D-Link" in descr:
+                    return str(int(descr.split()[-1]) - 1)
+            elif self._model == "MIKROTIK CRS312-4C+8XG-RM":
+                if "ether" in descr:
+                    return str(int(descr.replace("ether", "")) - 1)
+                elif "combo" in descr:
+                    return str(int(descr.replace("combo", "")) + 8)
+        except Exception:
+            pass
+        return None
+
+
 class Interface(SubObject):
+    __slots__ = ("_params",)
+
     def __init__(self):
         super().__init__()
-        self.params = {
-            "if.in.bytes":    None,
-            "if.in.packets":  None,
-            "if.out.errors":  None,
-            "if.out.bytes":   None,
+        self._params: Dict[str, Optional[str]] = {
+            "if.in.bytes": None,
+            "if.in.packets": None,
+            "if.out.errors": None,
+            "if.out.bytes": None,
             "if.out.packets": None,
-            "if.in.errors":   None
+            "if.in.errors": None,
         }
 
-    def update(self, params_new: dict):
-        self.params.update(params_new)
+    def update(self, fresh: Dict[str, str]):
+        """Добавляем (или обновляем) только полученные сегодня значения."""
+        self._params.update({k: v for k, v in fresh.items() if v is not None})
+
+    def reset(self):
+        """Обнуляем всё (вызывается при потере связи)."""
+        for k in self._params:
+            self._params[k] = None
 
     def get_params_all(self):
-        return self.params
+        return self._params.copy()
 
     def get_metric(self, metric_id: str):
         try:
-            if metric_id in self.params:
-                result = self.params[metric_id]
-                if result is not None:
-                    self.params[metric_id] = None
-                    result = self.validate_integer(result)
-                return result
-            else:
-                raise KeyError(f"Ключ не найден в словаре.")
-        except Exception as e:
-            print(f"Ошибка в запросе метрики {metric_id} - {e}")
+            val = self._params[metric_id]
+            if val is not None:
+                self._params[metric_id] = None
+                val = self.validate_integer(val)
+            return val
+        except KeyError:
+            print(f"Метрика {metric_id} отсутствует")
+            return None
+        except Exception as err:
+            print(f"Ошибка в get_metric({metric_id}) — {err}")
             return None
