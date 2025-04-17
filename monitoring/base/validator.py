@@ -1,27 +1,28 @@
+from typing import Optional, Set
+
 class ValidationMixin:
+
+    _ALLOWED_STATES: Set[str] = {"OK", "WARN", "ERROR", "FATAL", "UNKNOWN"}
+
     @staticmethod
-    def validate_string(value):
+    def validate_string(value: object) -> str:
         return str(value)
 
     @staticmethod
-    def validate_integer(value):
+    def validate_integer(value: object) -> Optional[int]:
         try:
             return int(value)
         except (ValueError, TypeError):
             return None
 
     @staticmethod
-    def validate_double(value):
+    def validate_double(value: object) -> Optional[float]:
         try:
-            return round(float(str(value).replace(',', '.')), 2)
+            return round(float(str(value).replace(",", ".")), 2)
         except (ValueError, TypeError):
             return None
 
-    @staticmethod
-    def validate_state(value):
-        allowed_states = {"OK", "WARN", "ERROR", "FATAL", "UNKNOWN"}
-        val_str = str(value).upper().strip()
-        result = val_str if val_str in allowed_states else None
-        if result is None:
-            return None
-        return str(result)
+    @classmethod
+    def validate_state(cls, value: object) -> Optional[str]:
+        val = str(value).upper().strip()
+        return val if val in cls._ALLOWED_STATES else None

@@ -24,13 +24,13 @@ class DisksMonitor(BaseObject):
             result_json = json.loads(result)
             all_disks = result_json.get("devices", [])
             for dev in all_disks:
+                print(all_disks)
                 name = dev.get("name")
                 dev_type = dev.get("type")
                 if dev_type not in ["ata", "nvme", "scsi"]:
                     continue
                 self.disks[name] = Disk(name, dev_type)
-                #disk_index = self.__replace_device_name(name, True)
-                self.disks_info[name] = f"disk:{len(self.disks)}"
+                self.disks_info[name] = f"disk:{len(self.disks) - 1}"
         except Exception as e:
             logger_monitoring.error(f"Ошибка выполнения команды smartctl --scan: {e}")
 
