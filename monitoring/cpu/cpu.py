@@ -219,7 +219,6 @@ class CPUsMonitor(BaseObject):
             for index_core in range(len(self.cores_info)):
                 data_line = cores_info[str(index_core)] + [str(load[index_core])]
                 self.cores[str(index_core)].update(data_line)
-            logger_monitoring.info("Выполнено обновление CPU")
         elif self.system == 'Windows':
             cores_info = self.__get_core_wmic_windows()
             for i, core in self.cores.items():

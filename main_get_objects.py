@@ -79,7 +79,7 @@ def main():
         (DisksLiteMonitor, 'disk'),
         (EthPortMonitor, 'if'),
         # (FreonA, 'f_a'),
-        # (FreonB, 'f_b'),
+        (FreonB, 'f_b'),
         # (Switch, 'switch1', '10.70.0.250'),
         # (Switch, 'switch2', '')
     ]
