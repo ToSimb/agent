@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional, Iterable
+from typing import Dict, Optional, Iterable
 
 from pysnmp.hlapi import (
     SnmpEngine,
@@ -20,9 +20,9 @@ class Switch(BaseObject):
         super().__init__()
         self.ip = ip
 
-        self.connection_value: Optional[bool] = None
+        self.connection_value: Optional[str] = "FATAL"
         self.interfaces: Dict[str, "Interface"] = {}
-        self.interfaces_info: Dict[Any, str] = {}
+        self.interfaces_info: Dict[str, str] = {}
         self.item_index: Dict[str, "Interface"] = {}
         self.connection_id: int = -1
 
@@ -34,7 +34,6 @@ class Switch(BaseObject):
         self._engine = SnmpEngine()
         self._target = None
         self._community = "public"
-
         self._load_config()
         self._refresh_state(first_run=True)
 
@@ -58,6 +57,7 @@ class Switch(BaseObject):
                 if value == index:
                     self.item_index[str(idx_val)] = self.interfaces[key]
                     break
+
         logger_monitoring.info("Индексы для коммутаторов обновлены")
 
     def get_all(self):
@@ -65,7 +65,7 @@ class Switch(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id == str(self.connection_id) and metric_id == "connection":
+            if item_id == str(self.connection_id) and metric_id == "connection.state":
                 return self.connection_value
             return self.item_index[item_id].get_metric(metric_id)
         except Exception as err:
@@ -102,8 +102,8 @@ class Switch(BaseObject):
 
         for idx in range(iface_cnt):
             self.interfaces[str(idx)] = Interface()
-            self.interfaces_info[idx] = f"switch:{self._system_id}:{idx}"
-        self.interfaces_info["connection"] = "switch:connection"
+            self.interfaces_info[str(idx)] = f"switch:{self._system_id}:{idx}"
+        self.interfaces_info["connection"] = "switch:0:connection"
         logger_monitoring.info(f"Порядковый номер коммутатора в системе {self._system_id}")
 
     def _snmp_get(self, oid: str):
@@ -146,13 +146,17 @@ class Switch(BaseObject):
             return
 
     def _refresh_state(self, *, first_run=False):
-        self.connection_value = self._snmp_get("1.3.6.1.2.1.1.3.0") is not None
-        if not self.connection_value:
+
+        if self._snmp_get("1.3.6.1.2.1.1.3.0") is not None:
+            self.connection_value = "OK"
+        else:
+            self.connection_value = "FATAL"
+        if self.connection_value == "FATAL":
             for iface in self.interfaces.values():
                 iface.reset()
             return
 
-        if (first_run or not self._index_interface) and self.connection_value:
+        if (first_run or not self._index_interface) and self.connection_value == "OK":
             self._index_interface = self._discover_indices()
 
         aggregated: Dict[str, Dict[str, str]] = {}
@@ -231,6 +235,6 @@ class Interface(SubObject):
         except KeyError:
             logger_monitoring.error(f"Метрика {metric_id} отсутствует")
             return None
-        except Exception as err:
+        except Exception as e:
             logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None
