@@ -1,6 +1,14 @@
 certifi==2025.1.31
+cffi==1.17.1
 charset-normalizer==3.4.1
+cryptography==44.0.2
 idna==3.10
+ply==3.11
 psutil==7.0.0
+pyasn1==0.4.8
+pycparser==2.22
+pysmi==1.2.1
+pysnmp==5.1.0
+pysnmpcrypto==0.0.4
 requests==2.32.3
 urllib3==2.4.0

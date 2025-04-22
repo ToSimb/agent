@@ -2,13 +2,14 @@ from monitoring.service import (measure_execution_time,
                                 open_file,
                                 save_file_data)
 from monitoring.cpu.cpu import CPUsMonitor
-from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+# from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
-from monitoring.disk.disk_new import DisksMonitor
-from monitoring.switch.switch import Switch
-from monitoring.freon_a.freon_a import FreonA
+# from monitoring.disk.disk_new import DisksMonitor
+from monitoring.disk_lite.disk_lite import DisksLiteMonitor
+# from monitoring.switch.switch import Switch
+# from monitoring.freon_a.freon_a import FreonA
 from monitoring.freon_b.freon_b import FreonB
 
 from logger.logger_monitoring import logger_monitoring

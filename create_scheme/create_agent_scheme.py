@@ -86,7 +86,7 @@ def find_root_templates(templates_data):
 
 def main():
     try:
-        templates_path = 'templates_fb.json'
+        templates_path = 'join_temp.json'
         metrics_path = 'all_metrics.json'
 
         templates_data = load_json_file(templates_path)

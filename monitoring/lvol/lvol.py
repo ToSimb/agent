@@ -28,11 +28,9 @@ class LvolsMonitor(BaseObject):
         self.item_index = {}
         partitions = psutil.disk_partitions()
         filtered_partitions = self.__filter_partitions(partitions)
-        index_lvol = 0
         for p in filtered_partitions:
             self.lvols[p.mountpoint] = Lvol(p.mountpoint)
-            self.lvols_info[p.mountpoint] = f"lvol:{index_lvol}"
-            index_lvol += 1
+            self.lvols_info[p.mountpoint] = f"lvol:{p.mountpoint}"
 
 
     @staticmethod
