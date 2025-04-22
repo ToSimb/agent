@@ -1,3 +1,4 @@
+import os
 import platform
 import psutil
 import json
@@ -142,6 +143,8 @@ def collect_device_info():
 
 
 if __name__ == "__main__":
+    names_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_names.txt")
     devices = collect_device_info()
-    with open("_names.txt", "w", encoding="utf-8") as f:
+    with open(names_path, "w", encoding="utf-8-sig") as f:
         json.dump(devices, f, indent=4, ensure_ascii=False)
+    print("Информация успешно сохранена в файл _names.txt")

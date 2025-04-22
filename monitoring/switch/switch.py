@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional, Iterable
+from typing import Dict, Optional, Iterable
 
 from pysnmp.hlapi import (
     SnmpEngine,

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import re
 import shutil
@@ -125,6 +126,7 @@ def get_disks_report() -> str:
 # -------------------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    with open("_disks.txt", "w", encoding="utf-8") as f:
+    disks_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_disks.txt")
+    with open(disks_path, "w", encoding="utf-8-sig") as f:
         f.write(get_disks_report())
-    print("Информация успешно сохранена в файл")
+    print("Информация успешно сохранена в файл _disks.txt")
