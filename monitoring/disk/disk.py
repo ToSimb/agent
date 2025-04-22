@@ -4,7 +4,6 @@ import subprocess
 import shutil
 import json
 from monitoring.base import BaseObject, SubObject
-
 from logger.logger_monitoring import logger_monitoring
 
 class DisksMonitor(BaseObject):
@@ -13,36 +12,52 @@ class DisksMonitor(BaseObject):
         self.disks = {}
         self.disks_info = {}
         self.item_index = {}
+
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
+        self.smartctl_available = shutil.which("smartctl") is not None
 
-        try:
-            command = ['smartctl', '--scan']
-            encoding = locale.getpreferredencoding()
-            result = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode(encoding).strip().split("\n")
-            if result:
-                all_disks = [[line.split()[0], line.split()[2]] for line in result if line.strip()]
-                for disk in all_disks:
-                    self.disks[disk[0]] = Disk(disk)
+        if self.smartctl_available:
+            try:
+                cmd = ['smartctl', '--scan', '-j']
+                encoding = locale.getpreferredencoding()
+                output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode(encoding)
+                data = json.loads(output)
+                devices = data.get("devices", [])
+                for dev in devices:
+                    name = dev.get("name")
+                    dev_type = dev.get("type")
+                    if dev_type not in ["ata", "nvme", "scsi"] or not name:
+                        continue
+                    self.disks[name] = Disk(name, dev_type, self.smartctl_available)
+                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
+            except Exception as e:
+                logger_monitoring.warning(f"Нет прав администратора или ошибка при сканировании дисков: {e}")
 
+            # Добавление дисков которые smartctl не увидел
+            speeds = self.__get_disks_rw_speed() or {}
+            for name in speeds:
+                if name not in self.disks:
+                    self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
+                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
 
-                    disk_index = self.__replace_device_name(disk[0], True)
-                    self.disks_info[disk[0]] = f"disk:{disk_index}"
-        except Exception as e:
-            logger_monitoring.error(f"Ошибка выполнения команды {command}: {e}")
+        else:
+            logger_monitoring.info("smartctl не найден в системе, невозможно собрать SMART параметры.")
 
     def update(self):
-        disks_speed = self.__get_disks_rw_speed()
-        for key, disk in self.disks.items():
-            disk.update(disks_speed[key])
+        speeds = self.__get_disks_rw_speed() or {}
+        for name, disk in self.disks.items():
+            disk_speed = speeds.get(name, {"read": None, "write": None})
+            disk.update(disk_speed)
 
     def get_all(self):
-        return [{index: obj.get_params_all()} for index, obj in self.disks.items()]
+        return [{self.disks_info[name]: disk.get_params_all()} for name, disk in self.disks.items()]
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            return self.item_index.get(item_id).get_metric(metric_id)
+            disk = self.item_index.get(item_id)
+            return disk.get_metric(metric_id) if disk else None
         except Exception as e:
             logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")
             return None
@@ -61,65 +76,49 @@ class DisksMonitor(BaseObject):
     def get_objects_description(self):
         return self.disks_info
 
-    @staticmethod
-    def __replace_device_name(index_or_name, reverse=False):
-        if reverse:
-            # Ожидаем имя устройства, например: "/dev/sdab"
-            name = index_or_name
-            if not name.startswith("/dev/sd"):
-                return None
-            suffix = name[7:]  # удаляем "/dev/sd"
-            result = 0
-            for char in suffix:
-                result = result * 26 + (ord(char) - ord('a') + 1)
-            return str(result - 1)
-        else:
-            # Ожидаем индекс, например: 27
-            index = index_or_name
-            if index < 0:
-                return None
-            letters = []
-            while index >= 0:
-                letters.append(chr(ord('a') + (index % 26)))
-                index = (index // 26) - 1
-            return f"/dev/sd{''.join(reversed(letters))}"
-
     def __get_disks_rw_speed(self):
         if self.system == "Windows":
-            return self.__get_windows_disk_speed() if self.wmic_available else {}
+            if not self.wmic_available:
+                logger_monitoring.warning(f"wmic не найден в Windows, невозможно собрать скорости чтения и записи.")
+                return {}
+            return self.__get_windows_disk_speed()
         elif self.system == "Linux":
-            return self.__get_linux_disk_speed() if self.iostat_available else {}
+            if not self.iostat_available:
+                logger_monitoring.warning("iostat не найден в Linux, невозможно собрать скорости чтения и записи.")
+                return {}
+            return self.__get_linux_disk_speed()
         else:
-            logger_monitoring.error("Ошибка: Поддерживаются только Windows и Linux.")
-            return None
+            logger_monitoring.error("ОС не поддерживается.")
+            return {}
 
     def __get_windows_disk_speed(self):
-        """Получает скорость чтения и записи дисков в Windows с помощью wmic."""
-        cmd = 'wmic path Win32_PerfFormattedData_PerfDisk_PhysicalDisk get Name,DiskReadBytesPersec,DiskWriteBytesPersec'
+        cmd = ['wmic', 'path', 'Win32_PerfFormattedData_PerfDisk_PhysicalDisk',
+               'get', 'Name,DiskReadBytesPersec,DiskWriteBytesPersec', '/format:csv']
         try:
-            result = subprocess.check_output(cmd, shell=True, text=True)
-            lines = result.strip().split("\n")
+            output = subprocess.check_output(cmd, text=True)
+            lines = [line for line in output.splitlines() if line.strip()]
+            speeds = {}
 
-            disk_speeds = {}
             for line in lines[1:]:
-                data = line.split()
-                if len(data) >= 3:
-                    disk_name, read_speed, write_speed = data[2], data[0], data[1]
-                    if disk_name == "_Total":
-                        continue
-                    disk_name = self.__replace_device_name(int(disk_name))
-                    try:
-                        disk_speeds[disk_name] = {"read": float(read_speed), "write": float(write_speed)}
-                    except ValueError:
-                        disk_speeds[disk_name] = {"read": None, "write": None}
-            return disk_speeds
+                parts = line.split(',')
+                if len(parts) < 4:
+                    continue
+                _, read_b, write_b, disk_name = parts[:4]
+                disk_name = disk_name.split()[0]
+                if disk_name == "_Total":
+                    continue
+                try:
+                    dev = self.__replace_device_name(int(disk_name))
+                except Exception:
+                    dev = None
+                speeds[dev] = {"read": float(read_b), "write": float(write_b)}
+            return speeds
         except Exception as e:
             logger_monitoring.error(f"Ошибка при получении данных о скорости дисков в Windows: {e}")
             return {}
 
     @staticmethod
     def __get_linux_disk_speed():
-        """Получает скорость чтения и записи дисков в Linux с помощью iostat."""
         try:
             result = subprocess.run(["iostat", "-d", "-k", "1", "2"],
                                     capture_output=True, text=True, check=True)
@@ -130,11 +129,6 @@ class DisksMonitor(BaseObject):
                     data = line.split()
                     if len(data) >= 4:
                         disk_name, read_speed, write_speed = data[0], data[2], data[3]
-
-                        # Слабое место - необходимо больше данных!
-                        if "nvme" in disk_name:
-                            disk_name = data[0][:5]
-
                         if disk_name == 'Device':
                             break
                         try:
@@ -149,70 +143,103 @@ class DisksMonitor(BaseObject):
             logger_monitoring.error(f"Ошибка при получении данных о скорости дисков в Linux: {e}")
             return {}
 
+    @staticmethod
+    def __replace_device_name(index_or_name, reverse=False):
+        if reverse:
+            name = index_or_name
+            if not name.startswith("/dev/sd"):
+                return None
+            suffix = name[7:]
+            idx = 0
+            for c in suffix:
+                idx = idx * 26 + (ord(c) - ord('a') + 1)
+            return str(idx - 1)
+        else:
+            idx = index_or_name
+            if idx < 0:
+                return None
+            letters = []
+            while idx >= 0:
+                letters.append(chr(ord('a') + (idx % 26)))
+                idx = idx // 26 - 1
+            return f"/dev/sd{''.join(reversed(letters))}"
 
 class Disk(SubObject):
-    def __init__(self, disk_indo: list):
+    def __init__(self, name: str, interface_type, smartctl_available: bool):
         super().__init__()
-        self.name = disk_indo[0]
-        self.interface_type = disk_indo[1]
-        self.params = {
-            "disk.write.bytes.per.sec": None,
-            "disk.temperature": None,
-            "disk.seek.error.rate": None,
-            "disk.read.error.retry.rate": None,
-            "disk.reallocated.sectors.count": None,
-            "disk.read.bytes.per.sec": None,
-            "disk.head.flying.hours": None
-        }
+        self.name = name
+        self.interface_type = interface_type
+        self.smartctl_available = smartctl_available
         self.system = platform.system()
 
-    def update(self, disks_speed):
-        result = {"disk.write.bytes.per.sec": disks_speed["write"], "disk.read.bytes.per.sec": disks_speed["read"]}
+        self.params = {
+            "disk.write.bytes.per.sec": None,
+            "disk.read.bytes.per.sec": None,
+            "disk.temperature": None,
+            "disk.power.on.hours": None,
+            "disk.read.error.rate": None,
+            "disk.seek.error.rate": None,
+            "disk.reallocated.sectors.count": None
+        }
 
-        data = {}
+    def update(self, speed: dict):
+        self.params["disk.write.bytes.per.sec"] = speed.get("write")
+        self.params["disk.read.bytes.per.sec"] = speed.get("read")
+        if not self.smartctl_available:
+            return
+
         if self.system == "Windows":
-            command = ['smartctl', '-A', '-j', '-d', self.interface_type, self.name]
+            cmd = ['smartctl', '-a', '-j', '-d', self.interface_type or 'auto', self.name]
         else:
-            command = ['smartctl', '-A', '-j', self.name]
+            cmd = ['smartctl', '-a', '-j', self.name]
+
         try:
-            output = subprocess.check_output(command, text=True)
+            output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
             data = json.loads(output)
+        except (PermissionError, subprocess.CalledProcessError, json.JSONDecodeError) as e:
+            logger_monitoring.debug(f"SMART параметры пропущены для: {self.name}: {e}")
+            return
         except Exception as e:
-            logger_monitoring.error(f"Ошибка вызова команды {command} - {e}")
+            logger_monitoring.error(f"Ошибка вызова команды {cmd} - {e}")
+            return
 
-        if data.get("ata_smart_attributes"):
-            attributes = data.get("ata_smart_attributes", {}).get("table", [])
-            for attr in attributes:
-                attr_name = attr.get("name", "").lower()
+        if "ata_smart_attributes" in data:
+            for attr in data["ata_smart_attributes"].get("table", []):
+                raw = attr.get("raw", {}).get("value")
+                attr_id = attr.get("id")
+                if raw is None or attr_id is None:
+                    continue
+                if attr_id == 1:
+                    self.params["disk.read.error.rate"] = raw
+                elif attr_id == 5:
+                    self.params["disk.reallocated.sectors.count"] = raw
+                elif attr_id == 7:
+                    self.params["disk.seek.error.rate"] = raw
+                elif attr_id == 9:
+                    self.params["disk.power.on.hours"] = raw
+                elif attr_id in (190, 194):
+                    self.params["disk.temperature"] = raw
 
-                if "temperature_celsius" in attr_name or "airflow_temperature_cel" in attr_name:
-                    result["disk.temperature"] = attr.get("raw", None).get("value")
+        elif "nvme_smart_health_information_log" in data:
+            nv = data["nvme_smart_health_information_log"]
+            self.params["disk.temperature"] = nv.get("temperature")
+            self.params["disk.power.on.hours"] = nv.get("power_on_hours")
+            self.params["disk.read.error.rate"] = None
+            self.params["disk.seek.error.rate"] = None
+            self.params["disk.reallocated.sectors.count"] = None
 
-                elif "seek_error_rate" in attr_name:
-                    result["disk.seek.error.rate"] = attr.get("raw", None).get("value")
+        else:
+            # Temperature
+            if isinstance(data.get("temperature"), dict):
+                self.params["disk.temperature"] = data["temperature"].get("current")
+            # Power-on hours
+            if isinstance(data.get("power_on_time"), dict):
+                self.params["disk.power.on.hours"] = data["power_on_time"].get("hours")
 
-                elif "raw_read_error_rate" in attr_name:
-                    result["disk.read.error.retry.rate"] = attr.get("raw", None).get("value")
+            self.params["disk.read.error.rate"] = None
+            self.params["disk.seek.error.rate"] = None
+            self.params["disk.reallocated.sectors.count"] = None
 
-                elif "reallocated_sector_ct" in attr_name:
-                    result["disk.reallocated.sectors.count"] = attr.get("raw", None).get("value")
-
-                elif "power_on_hours" in attr_name:
-                    result["disk.head.flying.hours"] = attr.get("raw", None).get("value")
-
-        elif data.get("nvme_smart_health_information_log"):
-            attributes = data.get("nvme_smart_health_information_log", {})
-
-            if "temperature" in attributes:
-                result["disk.temperature"] = attributes.get("temperature", None)
-
-            if "power_on_hours" in attributes:
-                result["disk.head.flying.hours"] = attributes.get("power_on_hours", None)
-
-            if "power_cycles" in attributes:
-                result["disk.power.cycles"] = attributes.get("power_cycles", None)
-
-        self.params.update(result)
 
     def get_params_all(self):
         return self.params
@@ -229,7 +256,7 @@ class Disk(SubObject):
                         result = self.validate_integer(result)
                 return result
             else:
-                raise KeyError(f"Ключ не найден в словаре.")
+                raise KeyError(f"Ключ {metric_id} не найден в словаре параметров.")
         except Exception as e:
             logger_monitoring.error(f"Ошибка в запросе метрики {metric_id} - {e}")
             return None

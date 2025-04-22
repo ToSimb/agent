@@ -1,8 +1,8 @@
 import platform
-import subprocess
 import psutil
-import re
 import json
+import subprocess
+import re
 
 def find_field(fields, output):
     """
@@ -13,35 +13,6 @@ def find_field(fields, output):
         if match:
             return match.group(1).strip()
     return "Unknown"
-
-def get_disks():
-    """
-    Получает список дисков с помощью smartctl, включая модель и серийный номер.
-    """
-    disks = []
-    try:
-        result = subprocess.run(["smartctl", "--scan"], capture_output=True, text=True)
-        for line in result.stdout.strip().splitlines():  
-            match = re.search(r"(/dev/\S+|\S+:\s+)", line)
-            if match:
-                device = match.group(1).strip()
-                try:
-                    info_cmd = ["smartctl", "-i", device]
-                    info = subprocess.run(info_cmd, capture_output=True, text=True)
-                    output = info.stdout
-                    model = find_field(["Model Number", "Model Family", "Device Model", "Product"], output)
-                    serial = find_field(["Serial Number"], output)
-
-                    disks.append({
-                        "device": device,
-                        "model": model,
-                        "serial": serial
-                    })
-                except Exception as e:
-                    disks.append({"device": device, "error": str(e)})
-    except Exception as e:
-        disks.append({"error": str(e)})
-    return disks
 
 def get_gpu():
     """
@@ -107,7 +78,6 @@ def get_cpu():
                     elif line.startswith("model name"):
                         current_processor['model_name'] = line.split(":")[1].strip()
                 for index in model_name:
-                    print(index)
                     cpus.append(index)
     except Exception as e:
         print(f"error: {e}")
@@ -164,7 +134,6 @@ def collect_device_info():
     Собирает информацию со всех типов устройств и возвращает единый словарь.
     """
     return {
-        "disk": get_disks(),
         "gpu": get_gpu(),
         "cpu": get_cpu(),
         "interface": get_network_interfaces(),
@@ -176,4 +145,3 @@ if __name__ == "__main__":
     devices = collect_device_info()
     with open("_names.txt", "w", encoding="utf-8") as f:
         json.dump(devices, f, indent=4, ensure_ascii=False)
-    print("Информация успешно сохранена в файл settings_file")
