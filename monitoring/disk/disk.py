@@ -31,19 +31,20 @@ class DisksMonitor(BaseObject):
                     if dev_type not in ["ata", "nvme", "scsi"] or not name:
                         continue
                     self.disks[name] = Disk(name, dev_type, self.smartctl_available)
-                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
+                    # self.disks_info[name] = f"disk:{len(self.disks) - 1}"
+                    self.disks_info[name] = f"disk:{name}"
             except Exception as e:
                 logger_monitoring.warning(f"Нет прав администратора или ошибка при сканировании дисков: {e}")
-
-            # Добавление дисков которые smartctl не увидел
-            speeds = self.__get_disks_rw_speed() or {}
-            for name in speeds:
-                if name not in self.disks:
-                    self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
-                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
-
         else:
             logger_monitoring.info("smartctl не найден в системе, невозможно собрать SMART параметры.")
+
+        # Добавление дисков которые smartctl не увидел
+        speeds = self.__get_disks_rw_speed() or {}
+        for name in speeds.keys():
+            if name not in self.disks:
+                self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
+                self.disks_info[name] = f"disk:{name}"
+                # self.disks_info[name] = f"disk:{len(self.disks) - 1}"
 
     def update(self):
         speeds = self.__get_disks_rw_speed() or {}
@@ -133,6 +134,8 @@ class DisksMonitor(BaseObject):
                             break
                         try:
                             if 'loop' not in disk_name:
+                                if "nvme" in disk_name:
+                                    disk_name = disk_name[:-2]
                                 read_speed = float(read_speed.replace(",", ".")) * 1024
                                 write_speed = float(write_speed.replace(",", ".")) * 1024
                                 disk_speeds[f"/dev/{disk_name}"] = {"read": read_speed, "write": write_speed}
@@ -224,9 +227,6 @@ class Disk(SubObject):
             nv = data["nvme_smart_health_information_log"]
             self.params["disk.temperature"] = nv.get("temperature")
             self.params["disk.power.on.hours"] = nv.get("power_on_hours")
-            self.params["disk.read.error.rate"] = None
-            self.params["disk.seek.error.rate"] = None
-            self.params["disk.reallocated.sectors.count"] = None
 
         else:
             # Temperature
@@ -235,11 +235,6 @@ class Disk(SubObject):
             # Power-on hours
             if isinstance(data.get("power_on_time"), dict):
                 self.params["disk.power.on.hours"] = data["power_on_time"].get("hours")
-
-            self.params["disk.read.error.rate"] = None
-            self.params["disk.seek.error.rate"] = None
-            self.params["disk.reallocated.sectors.count"] = None
-
 
     def get_params_all(self):
         return self.params

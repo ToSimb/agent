@@ -130,11 +130,11 @@ class EthPort(SubObject):
     @staticmethod
     def __open_dict(file_name):
         try:
-            with open(file_name, "r") as f:
+            with open(file_name, "r", encoding='utf-8-sig') as f:
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:
-            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для портров - {e}")
             return None
 
     def update(self, first_stats_eth_port=None, second_stats_eth_port=None):
