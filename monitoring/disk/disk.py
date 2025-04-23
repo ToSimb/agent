@@ -6,6 +6,7 @@ import json
 from monitoring.base import BaseObject, SubObject
 from logger.logger_monitoring import logger_monitoring
 
+
 class DisksMonitor(BaseObject):
     def __init__(self):
         super().__init__()
@@ -16,11 +17,11 @@ class DisksMonitor(BaseObject):
         self.system = platform.system()
         self.iostat_available = shutil.which("iostat") is not None
         self.wmic_available = shutil.which("wmic") is not None
-        self.smartctl_available = shutil.which("smartctl") is not None
+        self.smartctl_available = True
 
         if self.smartctl_available:
             try:
-                cmd = ['smartctl', '--scan', '-j']
+                cmd = ['C:\Program Files\smartmontools\\bin\smartctl', '--scan', '-j']
                 encoding = locale.getpreferredencoding()
                 output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode(encoding)
                 data = json.loads(output)
@@ -31,19 +32,18 @@ class DisksMonitor(BaseObject):
                     if dev_type not in ["ata", "nvme", "scsi"] or not name:
                         continue
                     self.disks[name] = Disk(name, dev_type, self.smartctl_available)
-                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
+                    self.disks_info[name] = f"disk:{name}"
             except Exception as e:
                 logger_monitoring.warning(f"Нет прав администратора или ошибка при сканировании дисков: {e}")
-
-            # Добавление дисков которые smartctl не увидел
-            speeds = self.__get_disks_rw_speed() or {}
-            for name in speeds:
-                if name not in self.disks:
-                    self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
-                    self.disks_info[name] = f"disk:{len(self.disks) - 1}"
-
         else:
             logger_monitoring.info("smartctl не найден в системе, невозможно собрать SMART параметры.")
+
+        # Добавление дисков которые smartctl не увидел
+        speeds = self.__get_disks_rw_speed() or {}
+        for name in speeds.keys():
+            if name not in self.disks:
+                self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
+                self.disks_info[name] = f"disk:{name}"
 
     def update(self):
         speeds = self.__get_disks_rw_speed() or {}
@@ -98,7 +98,6 @@ class DisksMonitor(BaseObject):
             output = subprocess.check_output(cmd, text=True)
             lines = [line for line in output.splitlines() if line.strip()]
             speeds = {}
-
             for line in lines[1:]:
                 parts = line.split(',')
                 if len(parts) < 4:
@@ -133,6 +132,8 @@ class DisksMonitor(BaseObject):
                             break
                         try:
                             if 'loop' not in disk_name:
+                                if "nvme" in disk_name:
+                                    disk_name = disk_name[:-2]
                                 read_speed = float(read_speed.replace(",", ".")) * 1024
                                 write_speed = float(write_speed.replace(",", ".")) * 1024
                                 disk_speeds[f"/dev/{disk_name}"] = {"read": read_speed, "write": write_speed}
@@ -189,7 +190,7 @@ class Disk(SubObject):
             return
 
         if self.system == "Windows":
-            cmd = ['smartctl', '-a', '-j', '-d', self.interface_type or 'auto', self.name]
+            cmd = ['C:\Program Files\smartmontools\\bin\smartctl', '-a', '-j', '-d', self.interface_type or 'auto', self.name]
         else:
             cmd = ['smartctl', '-a', '-j', self.name]
 
@@ -218,7 +219,9 @@ class Disk(SubObject):
                 elif attr_id == 9:
                     self.params["disk.power.on.hours"] = raw
                 elif attr_id in (190, 194):
-                    self.params["disk.temperature"] = raw
+                    string_value = attr.get("raw", {}).get("string")
+                    raw_value = string_value.split()[0]
+                    self.params["disk.temperature"] = raw_value
 
         elif "nvme_smart_health_information_log" in data:
             nv = data["nvme_smart_health_information_log"]

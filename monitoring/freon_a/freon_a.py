@@ -53,7 +53,7 @@ class FreonA(BaseObject):
         self.vus = {}
         self.vus_info = {}
         self.conn = "FATAL"
-        self.connection = -1
+        self.connection = []
         self.item_index = {}
         fa = self.__send_req()
         if fa is not None:
@@ -75,6 +75,7 @@ class FreonA(BaseObject):
             for index_vu in file_dict.keys():
                 if index_vu in self.vus:
                     path = f"fa:{file_dict[index_vu]['x']-1}:{self.__get_address_full_board(int(file_dict[index_vu]['y']))}"
+                    self.vus_info[f"connection:{file_dict[index_vu]['x']-1}"] = f"fa:{file_dict[index_vu]['x']-1}:connection"
                     self.vus_info[index_vu] = path
                     for index in range(6):
                         self.vus_info[f"{[index_vu][0]}:T:{index}"] = f"{path}:T:{index}"
@@ -84,7 +85,6 @@ class FreonA(BaseObject):
                         self.vus_info[f"{[index_vu][0]}:I:{index}"] = f"{path}:I:{index}"
                 else:
                     logger_monitoring.error(f"ERROR: нет {index_vu} в списке объектов!")
-            self.vus_info['connection'] = 'fa:connection'
         else:
             logger_monitoring.error("файл пустой")
         if (len(self.vus)+1) == len(self.vus_info):
@@ -147,10 +147,8 @@ class FreonA(BaseObject):
         """
         for index in fa_dict:
             if fa_dict[index] is not None:
-                if index == "fa:connection":
-                    self.connection = fa_dict[index]
-                elif index == "connection":
-                    self.connection = fa_dict[index]
+                if "connection" in index:
+                    self.connection.append(str(fa_dict[index]))
                 else:
                     for key, value in self.vus_info.items():
                         if value == index:
@@ -182,9 +180,9 @@ class FreonA(BaseObject):
 
     def get_item_and_metric(self, item_id: str, metric_id: str):
         try:
-            if item_id in str(self.connection):
+            if item_id in self.connection:
                 if metric_id == "connection.state":
-                    return self.conn
+                    return self.validate_state(self.conn)
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
             logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")

@@ -48,11 +48,30 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
                 if int(index) >= FA_VU_NO_FULL:
                     index = int(index) + 1
                 item_path[f"fa:{index}:{numbers[-3]}:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
-            else:
+            elif 'half_board' in item_full_path:
                 index = numbers[-3]
                 if int(index) >= FA_VU_NO_FULL:
                     index = int(index) + 1
                 item_path[f"fa:{index}:{numbers[-2]}:{numbers[-1]}"] = item_full_path
+            elif 'device_connection' in item_full_path:
+                index = numbers[-2]
+                if int(index) >= FA_VU_NO_FULL:
+                    index = int(index) + 1
+                item_path[f"fa:{index}:connection"] = item_full_path
+    elif 'vu_fa_1' in item_full_path:
+        if len(numbers) > 3:
+            index = FA_VU_NO_FULL
+            if 'temperature' in item_full_path:
+                item_path[f"fa:{index}:{int(numbers[-3])+5}:{numbers[-2]}:T:{numbers[-1]}"] = item_full_path
+            elif 'current' in item_full_path:
+                item_path[f"fa:{index}:{int(numbers[-3])+5}:{numbers[-2]}:I:{numbers[-1]}"] = item_full_path
+            elif 'voltage' in item_full_path:
+                item_path[f"fa:{index}:{int(numbers[-3])+5}:{numbers[-2]}:U:{numbers[-1]}"] = item_full_path
+            elif 'half_board' in item_full_path:
+                item_path[f"fa:{index}:{int(numbers[-2])+5}:{numbers[-1]}"] = item_full_path
+            elif 'device_connection' in item_full_path:
+                item_path[f"fa:{index}:connection"] = item_full_path
+
     elif 'vu_fb_20' in item_full_path:
         if 'vu_fb_20' in item_full_path.split('/')[-1]:
             item_path[f"fb:{numbers[-1]}"] = item_full_path
