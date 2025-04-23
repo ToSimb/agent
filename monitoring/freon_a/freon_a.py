@@ -41,11 +41,7 @@ class FreonA(BaseObject):
                         а значением - объект класса Board_f_a(Unit_T,...).
                         (по факту мы делаем новые ссылки на объекты)
                             Пример: {'1111': <__main__.Board_f_a object at 0x79c9c8b41100>,
-                                     '1112': <__main__.Board_f_a object at 0x79c9c8b18700>, ...
-
-                                     '1121':
-
-                                     '1110': self.connection }
+                                     '1112': <__main__.Board_f_a object at 0x79c9c8b18700>, .. }
         """
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -115,7 +111,7 @@ class FreonA(BaseObject):
     @staticmethod
     def __open_dict(file_name):
         try:
-            with open(file_name, "r") as f:
+            with open(file_name, "r", encoding='utf-8-sig') as f:
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:

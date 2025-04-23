@@ -227,9 +227,6 @@ class Disk(SubObject):
             nv = data["nvme_smart_health_information_log"]
             self.params["disk.temperature"] = nv.get("temperature")
             self.params["disk.power.on.hours"] = nv.get("power_on_hours")
-            self.params["disk.read.error.rate"] = None
-            self.params["disk.seek.error.rate"] = None
-            self.params["disk.reallocated.sectors.count"] = None
 
         else:
             # Temperature
@@ -238,11 +235,6 @@ class Disk(SubObject):
             # Power-on hours
             if isinstance(data.get("power_on_time"), dict):
                 self.params["disk.power.on.hours"] = data["power_on_time"].get("hours")
-
-            self.params["disk.read.error.rate"] = None
-            self.params["disk.seek.error.rate"] = None
-            self.params["disk.reallocated.sectors.count"] = None
-
 
     def get_params_all(self):
         return self.params

@@ -50,9 +50,7 @@ class FreonB(BaseObject):
 
                                      '1112': <__main__.Board_fb object at 0x7162191bb5b0>, ..
 
-                                     '1121': <__main__.Unit_T object at 0x7162191d5640>, ..
-
-                                     '1110': self.connection }
+                                     '1121': <__main__.Unit_T object at 0x7162191d5640>, .. }
         """
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -111,11 +109,11 @@ class FreonB(BaseObject):
     @staticmethod
     def __open_dict(file_name):
         try:
-            with open(file_name, "r") as f:
+            with open(file_name, "r", encoding='utf-8-sig') as f:
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:
-            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФА - {e}")
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для ФБ - {e}")
             return None
 
     @staticmethod
