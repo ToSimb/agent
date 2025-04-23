@@ -10,7 +10,8 @@ from monitoring.disk.disk import DisksMonitor
 from monitoring.disk_lite.disk_lite import DisksLiteMonitor
 # from monitoring.switch.switch import Switch
 from monitoring.freon_a.freon_a import FreonA
-from monitoring.freon_b.freon_b import FreonB
+# from monitoring.freon_b.freon_b import FreonB
+
 
 from logger.logger_monitoring import logger_monitoring
 
@@ -77,7 +78,7 @@ def main():
         # (SystemMonitor, 'system'),
         # (LvolsMonitor, 'lvol'),
         (DisksMonitor, 'disk'),
-        (DisksLiteMonitor, 'disk_lite'),
+        # (DisksLiteMonitor, 'disk_lite'),
         # (EthPortMonitor, 'if'),
         (FreonA, 'f_a'),
         # (FreonB, 'f_b'),

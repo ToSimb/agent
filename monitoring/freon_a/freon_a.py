@@ -178,7 +178,7 @@ class FreonA(BaseObject):
         try:
             if item_id in self.connection:
                 if metric_id == "connection.state":
-                    return self.conn
+                    return self.validate_state(self.conn)
             return self.item_index.get(item_id).get_metric(metric_id)
         except Exception as e:
             logger_monitoring.error(f"Ошибка при вызове item_id - {item_id}: {metric_id} - {e}")

@@ -103,9 +103,8 @@ class EthPort(SubObject):
     def __init__(self, eth_port_name: str, ):
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = script_dir + "/if_dict.txt"
+        file_name = script_dir + "\\if_dict.txt"
         file_max_bandwidth = self.__open_dict(file_name)
-
         self.name = eth_port_name
         if self.name in file_max_bandwidth.keys():
             self.max_bandwidth = file_max_bandwidth[self.name]
@@ -130,11 +129,11 @@ class EthPort(SubObject):
     @staticmethod
     def __open_dict(file_name):
         try:
-            with open(file_name, "r", encoding='utf-8-sig') as f:
+            with open(file_name, "r", encoding="utf-8-sig") as f:
                 file_dict = json.load(f)
                 return file_dict
         except Exception as e:
-            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для портров - {e}")
+            logger_monitoring.error(f"Ошибка при прочтении файла конфигурации для Портов - {e}")
             return None
 
     def update(self, first_stats_eth_port=None, second_stats_eth_port=None):

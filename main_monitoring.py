@@ -15,14 +15,13 @@ from monitoring.service import (create_index_for_any,
                                 crate_items_agent_reg_response)
 from monitoring.system.system import SystemMonitor
 from monitoring.cpu.cpu import CPUsMonitor
-from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+# from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk import DisksMonitor
-from monitoring.disk_lite.disk_lite import DisksLiteMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.freon_a.freon_a import FreonA
-from monitoring.freon_b.freon_b import FreonB
-from monitoring.switch.switch import Switch
+# from monitoring.freon_b.freon_b import FreonB
+# from monitoring.switch.switch import Switch
 from storage.sqlite_commands import (create_connection,
                                      check_db,
                                      insert_params)
@@ -92,76 +91,16 @@ monitor_configs = [
         'monitor_class': EthPortMonitor,
         'settings_file': '_settings_file/proc/if.txt',
     },
-    # {
-    #     'name': 'f_a',
-    #     'monitor_class': FreonA,
-    #     'settings_file': '_settings_file/proc/f_a.txt',
-    # },
+    {
+        'name': 'f_a',
+        'monitor_class': FreonA,
+        'settings_file': '_settings_file/proc/f_a.txt',
+    },
     # {
     #     'name': 'f_b',
     #     'monitor_class': FreonB,
     #     'settings_file': '_settings_file/proc/f_b.txt',
     # },
-    {
-        'name': 'switch_dlink_dgs_1210_28x_me_0',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_28x_me_0.txt',
-        'ip': "10.70.0.250"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_0',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_0.txt',
-        'ip': "192.168.0.201"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_1',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_1.txt',
-        'ip': "192.168.0.202"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_2',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_2.txt',
-        'ip': "192.168.0.203"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_3',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_3.txt',
-        'ip': "192.168.0.204"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_4',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_4.txt',
-        'ip': "192.168.0.205"
-    },
-    {
-        'name': 'switch_mikrotik_crS312_4c_8xg_rm_5',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_mikrotik_crS312_4c_8xg_rm_5.txt',
-        'ip': "192.168.0.206"
-    },
-    {
-        'name': 'switch_dlink_dgs_1210_52_me_0',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_0.txt',
-        'ip': "10.90.90.91"
-    },
-    {
-        'name': 'switch_dlink_dgs_1210_52_me_1',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_1.txt',
-        'ip': "10.90.90.92"
-    },
-    {
-        'name': 'switch_dlink_dgs_1210_52_me_2',
-        'monitor_class': Switch,
-        'settings_file': '_settings_file/proc/switch_dlink_dgs_1210_52_me_2.txt',
-        'ip': "10.90.90.93"
-    },
 ]
 # ___________________________________
 
