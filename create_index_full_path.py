@@ -7,7 +7,7 @@ from monitoring.service import (open_file,
 FA_VU_NO_FULL = 30
 
 agent_scheme = open_file("agent_scheme.json")
-# agent_scheme = open_file("create_scheme/agent_scheme.json")
+# agent_scheme = open_file("create_scheme/agent_scheme_F51.json")
 # print(agent_scheme)
 
 item_path = {}
@@ -26,8 +26,12 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
     elif 'gpu_' in item_full_path.split('/')[-1]:
         item_path[f"gpu:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - gpu:{numbers[-1]}")
+    elif 'lvol_' in item_full_path.split('/')[-1] and 'f51' in item_full_path:
+        item_path["lvol:C:\\"] = item_full_path
     elif 'lvol_' in item_full_path.split('/')[-1]:
         item_path[f"lvol:{numbers[-1]}"] = item_full_path
+    elif 'disk_' in item_full_path.split('/')[-1] and 'f51' in item_full_path:
+        item_path["disk:/dev/sda"] = item_full_path
         # print(f"{item.get('full_path')} - lvol:{numbers[-1]}")
     # if 'vus_fa_1' in item_full_path:
     #     print(f"{item_full_path} - самостоятельно установить")
@@ -86,9 +90,6 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
         elif 'device_connection' in item_full_path.split('/')[-1]:
             item_path[f"fb:{numbers[-2]}:connection"] = item_full_path
 
-# print("Пути из схемы:")
-# for item in item_path:
-#     print(item)
 
 
 folder_path1 = '_settings_file/raw'
