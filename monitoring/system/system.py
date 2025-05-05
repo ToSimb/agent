@@ -2,7 +2,7 @@ import time
 import psutil
 from monitoring.base import BaseObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_system import logger_monitoring
 
 class SystemMonitor(BaseObject):
     def __init__(self):
