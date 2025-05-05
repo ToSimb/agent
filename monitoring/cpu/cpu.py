@@ -242,25 +242,29 @@ class CPUsMonitor(BaseObject):
 
         Возвращает:
             dict: {
-                  'all': ['1,63', '0,05', '0,29', '0,25', '0,00', '0,01', '0,00', '0,00', '0,00', '97,77'],
                   '0': ['1,68', '0,07', '0,27', '0,25', '0,00', '0,02', '0,00', '0,00', '0,00', '97,71'],
                   '1': ['1,63', '0,06', '0,37', '0,25', '0,00', '0,00', '0,00', '0,00', '0,00', '97,69'],
               }
         """
         try:
             output = {}
-            result = subprocess.run(['mpstat', '-P', 'ALL', '1', '1'], capture_output=True, text=True, check=True)
-            for line in result.stdout.splitlines():
-                if line:
-                    columns = line.split()
-                    if len(columns) > 10:
-                        # ОСОБЕННОСТЬ !! В Debian может время быть в формате времени PM/AM
-                        # по этому надо делать срезку такую: output[columns[2]] = columns[3:]
-                        output[columns[1]] = columns[2:]
+            result = subprocess.run(
+                ['mpstat', '-P', 'ALL', '1', '1'], capture_output=True, text=True, check=True
+            )
+            for line in reversed(result.stdout.splitlines()):
+                if not line:
+                    continue
+                columns = line.split()
+                if len(columns) > 10:
+                    if columns[1] == 'all':
+                        break
+                    output[columns[1]] = columns[2:]
             return output
+
         except Exception as e:
             logger_monitoring.error(f"Ошибка при выполнении команды mpstat: {e}")
             return {}
+
 
     @staticmethod
     def __get_core_wmic_windows():

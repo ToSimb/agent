@@ -1,4 +1,5 @@
-import locale
+#import locale
+import os
 import platform
 import subprocess
 import shutil
@@ -19,19 +20,29 @@ class DisksMonitor(BaseObject):
         self.wmic_available = shutil.which("wmic") is not None
         self.smartctl_available = True
 
+        self.smartctl_dir = r"C:\Users\prom\Documents\Agent_VKL\smartmontools\bin"
+        self.smartctl_path = os.path.join(self.smartctl_dir, "smartctl.exe")
+        self.env = os.environ.copy()
+        self.env["PATH"] = self.smartctl_dir + ";" + self.env.get("PATH", "")
+
         if self.smartctl_available:
             try:
-                cmd = ['C:\Program Files\smartmontools\\bin\smartctl', '--scan', '-j']
-                encoding = locale.getpreferredencoding()
-                output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode(encoding)
-                data = json.loads(output)
+                cmd = [self.smartctl_path, '--scan', '-j']
+                #encoding = locale.getpreferredencoding()
+                output = subprocess.run(cmd, cwd=self.smartctl_dir, env=self.env, capture_output=True)
+                data = json.loads(output.stdout)
                 devices = data.get("devices", [])
                 for dev in devices:
                     name = dev.get("name")
                     dev_type = dev.get("type")
                     if dev_type not in ["ata", "nvme", "scsi"] or not name:
                         continue
-                    self.disks[name] = Disk(name, dev_type, self.smartctl_available)
+                    self.disks[name] = Disk(name=name,
+                                            interface_type=dev_type,
+                                            smartctl_available=self.smartctl_available,
+                                            smartctl_dir=self.smartctl_dir,
+                                            smartctl_path=self.smartctl_path,
+                                            env=self.env)
                     self.disks_info[name] = f"disk:{name}"
             except Exception as e:
                 logger_monitoring.warning(f"Нет прав администратора или ошибка при сканировании дисков: {e}")
@@ -42,7 +53,12 @@ class DisksMonitor(BaseObject):
         speeds = self.__get_disks_rw_speed() or {}
         for name in speeds.keys():
             if name not in self.disks:
-                self.disks[name] = Disk(name, interface_type=None, smartctl_available=self.smartctl_available)
+                self.disks[name] = Disk(name=name,
+                                            interface_type="auto",
+                                            smartctl_available=self.smartctl_available,
+                                            smartctl_dir=self.smartctl_dir,
+                                            smartctl_path=self.smartctl_path,
+                                            env=self.env)
                 self.disks_info[name] = f"disk:{name}"
 
     def update(self):
@@ -166,12 +182,15 @@ class DisksMonitor(BaseObject):
             return f"/dev/sd{''.join(reversed(letters))}"
 
 class Disk(SubObject):
-    def __init__(self, name: str, interface_type, smartctl_available: bool):
+    def __init__(self, name: str, interface_type, smartctl_available: bool, smartctl_dir, smartctl_path, env):
         super().__init__()
         self.name = name
         self.interface_type = interface_type
         self.smartctl_available = smartctl_available
         self.system = platform.system()
+        self.smartctl_dir = smartctl_dir
+        self.smartctl_path = smartctl_path
+        self.env = env
 
         self.params = {
             "disk.write.bytes.per.sec": None,
@@ -180,28 +199,31 @@ class Disk(SubObject):
             "disk.power.on.hours": None,
             "disk.read.error.rate": None,
             "disk.seek.error.rate": None,
-            "disk.reallocated.sectors.count": None
+            "disk.reallocated.sectors.count": None,
+            "disk.ecc.error.rate": None,
+            "disk.uncorrectable.error.count": None
         }
 
     def update(self, speed: dict):
         self.params["disk.write.bytes.per.sec"] = speed.get("write")
         self.params["disk.read.bytes.per.sec"] = speed.get("read")
         if not self.smartctl_available:
+            logger_monitoring.debug(f"SMART параметры пропущены для: {self.name}.")
             return
 
         if self.system == "Windows":
-            cmd = ['C:\Program Files\smartmontools\\bin\smartctl', '-a', '-j', '-d', self.interface_type or 'auto', self.name]
+            cmd = [self.smartctl_path, '-a', '-j', '-d', self.interface_type, self.name]
         else:
-            cmd = ['smartctl', '-a', '-j', self.name]
+            cmd = [self.smartctl_path, '-a', '-j', self.name]
 
         try:
-            output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-            data = json.loads(output)
+            output = subprocess.run(cmd, cwd=self.smartctl_dir, env=self.env, capture_output=True)
+            data = json.loads(output.stdout)
         except (PermissionError, subprocess.CalledProcessError, json.JSONDecodeError) as e:
-            logger_monitoring.debug(f"SMART параметры пропущены для: {self.name}: {e}")
+            logger_monitoring.debug(f"SMART параметры пропущены для: {self.name}:\n{e}")
             return
         except Exception as e:
-            logger_monitoring.error(f"Ошибка вызова команды {cmd} - {e}")
+            logger_monitoring.error(f"Ошибка вызова команды {cmd}\n{e}")
             return
 
         if "ata_smart_attributes" in data:
@@ -222,6 +244,10 @@ class Disk(SubObject):
                     string_value = attr.get("raw", {}).get("string")
                     raw_value = string_value.split()[0]
                     self.params["disk.temperature"] = raw_value
+                elif attr_id == 195:
+                    self.params["disk.ecc.error.rate"] = raw
+                elif attr_id == 187:
+                    self.params["disk.uncorrectable.error.count"] = raw
 
         elif "nvme_smart_health_information_log" in data:
             nv = data["nvme_smart_health_information_log"]

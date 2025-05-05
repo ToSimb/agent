@@ -1,6 +1,7 @@
 import os
 import subprocess
 import re
+import sys
 import shutil
 
 def find_field(fields, output):
@@ -32,11 +33,19 @@ def _smart_devices() -> list[dict]:
     """
     Собирает информацию о дисках при помощи smartctl.
     """
-    if shutil.which("smartctl") is None:
-        raise RuntimeError("smartctl не найден в PATH")
+    #if shutil.which("smartctl") is None:
+    #    raise RuntimeError("smartctl не найден в PATH")
+
+    smartctl_dir  = r"C:\Users\prom\Documents\Agent_VKL\smartmontools\bin"
+    smartctl_path = os.path.join(smartctl_dir, "smartctl.exe")
+
+    env = os.environ.copy()
+    env["PATH"] = smartctl_dir + ";" + env.get("PATH", "")
 
     result = subprocess.run(
-        ["smartctl", "--scan"],
+        [smartctl_path, "--scan"],
+        cwd=smartctl_dir,
+        env=env,
         capture_output=True,
         text=True,
         check=True,
@@ -50,8 +59,10 @@ def _smart_devices() -> list[dict]:
 
         dev = m.group(1)
         info = subprocess.run(
-            ["smartctl", "-i", dev],
+            [smartctl_path, "-i", dev],
             capture_output=True,
+            cwd=smartctl_dir,
+            env=env,
             text=True,
             check=False,
         ).stdout
@@ -65,8 +76,10 @@ def _smart_devices() -> list[dict]:
                 or "Unknown model",
                 "serial": _find(["Serial Number"], info) or "Unknown SN",
                 "smart": subprocess.run(
-                    ["smartctl", "-A", dev],
+                    [smartctl_path, "-A", dev],
                     capture_output=True,
+                    cwd=smartctl_dir,
+                    env=env,
                     text=True,
                     check=False,
                 ).stdout.strip(),
