@@ -6,6 +6,7 @@ import signal
 import atexit
 
 from logger.logger_rest_client import logger_rest_client
+from logger.logger_rest_client_check import logger_rest_client_check
 from config import (DEBUG_MODE,
                     REUPLOAD_AGENT_SCHEME,
                     CHECK_SURVEY_PERIOD,
@@ -132,22 +133,22 @@ def check_server():
                 }
                 response = requests.get(SERVER_URL + "/check", params=params, timeout=HTTP_TIMEOUT_S)
                 if response.status_code == 200:
-                    logger_rest_client.info(f"CHECK: {response.status_code}")
+                    logger_rest_client_check.info(f"CHECK: {response.status_code}")
                 elif response.status_code == 227:
                     # вызов функции изменения периода опроса !!!!
-                    logger_rest_client.info(f"CHECK: {response.status_code}")
+                    logger_rest_client_check.info(f"CHECK: {response.status_code}")
                     if227_server()
                 else:
-                    logger_rest_client.warning(f"CHECK: {response.status_code}")
+                    logger_rest_client_check.warning(f"CHECK: {response.status_code}")
         except requests.exceptions.Timeout:
-            logger_rest_client.error("CHECK ERROR: Таймаут при выполнении запроса.")
+            logger_rest_client_check.error("CHECK ERROR: Таймаут при выполнении запроса.")
         # подумать - надо ли вообще делать это исключение!
         except requests.exceptions.ConnectionError:
-            logger_rest_client.error("CHECK ERROR: Сервер недоступен — ошибка подключения.")
+            logger_rest_client_check.error("CHECK ERROR: Сервер недоступен — ошибка подключения.")
         except Exception as e:
-            logger_rest_client.error(f"CHECK ERROR: {e}")
+            logger_rest_client_check.error(f"CHECK ERROR: {e}")
         time.sleep(CHECK_SURVEY_PERIOD)
-    logger_rest_client.info(f"Поток отвечающий за check завершился")
+    logger_rest_client_check.info(f"Поток отвечающий за check завершился")
 
 def post_params_server(AGENT_ID, result):
     while True:

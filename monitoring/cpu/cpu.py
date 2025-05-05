@@ -6,7 +6,7 @@ import ctypes
 from ctypes import wintypes, byref, POINTER, cast
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_cpu import logger_monitoring
 
 class CPUsMonitor(BaseObject):
     def __init__(self):
@@ -249,7 +249,7 @@ class CPUsMonitor(BaseObject):
         """
         try:
             output = {}
-            result = subprocess.run(['mpstat', '-P', 'ALL', '0'], capture_output=True, text=True, check=True)
+            result = subprocess.run(['mpstat', '-P', 'ALL', '1', '1'], capture_output=True, text=True, check=True)
             for line in result.stdout.splitlines():
                 if line:
                     columns = line.split()

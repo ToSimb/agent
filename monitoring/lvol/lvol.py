@@ -1,7 +1,7 @@
 import psutil
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_lvol import logger_monitoring
 
 class LvolsMonitor(BaseObject):
     def __init__(self):

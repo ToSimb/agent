@@ -13,7 +13,7 @@ from pysnmp.hlapi import (
     bulkCmd,
 )
 from monitoring.base import BaseObject, SubObject
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_switch import logger_monitoring
 
 class Switch(BaseObject):
     def __init__(self, ip: str):

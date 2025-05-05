@@ -3,7 +3,7 @@ import requests
 import os
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_fa import logger_monitoring
 from config import (URL_FA, DEBUG_MODE)
 
 if DEBUG_MODE:

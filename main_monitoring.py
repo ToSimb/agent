@@ -28,6 +28,7 @@ from storage.sqlite_commands import (create_connection,
 from storage.settings_handler import (get_file_mtime,
                                       get_settings)
 from logger.logger_monitoring import logger_monitoring
+from logger.logger_monitoring_error import logger_mon_tread
 from config import (DEBUG_MODE)
 
 
@@ -104,25 +105,19 @@ monitor_configs = [
 ]
 # ___________________________________
 
-# def periodic_update(object_monitor, interval):
-#     while not stop_event.is_set():
-#         time_start = time.time()
-#         object_monitor.update()
-#         time_update = time.time() - time_start
-#         if time_update < interval:
-#             time.sleep(interval - time_update)
-#     logger_monitoring.info(f"Поток завершился {object_monitor.name}")
-
 def periodic_update(object_monitor):
     while not stop_event.is_set():
-        time_start = time.time()
-        object_monitor.update()
-        time_update = time.time() - time_start
+        try:
+            time_start = time.time()
+            object_monitor.update()
+            time_update = time.time() - time_start
 
-        with object_monitor.interval_lock:
-            current_interval = object_monitor.update_interval
-        if time_update < current_interval:
-            time.sleep(current_interval - time_update)
+            with object_monitor.interval_lock:
+                current_interval = object_monitor.update_interval
+            if time_update < current_interval:
+                time.sleep(current_interval - time_update)
+        except Exception as e:
+            logger_mon_tread.error(f"Ошибка: {e}, у объекта: {object_monitor.name}")
 
     logger_monitoring.info(f"Поток завершился {object_monitor.name}")
 
