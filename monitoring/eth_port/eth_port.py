@@ -5,7 +5,7 @@ import os
 
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_eth_port import logger_monitoring
 
 INTERVAL = 0.5
 

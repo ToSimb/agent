@@ -6,7 +6,7 @@ import ctypes
 from ctypes import wintypes, byref, POINTER, cast
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_cpu import logger_monitoring
 
 class CPUsMonitor(BaseObject):
     def __init__(self):

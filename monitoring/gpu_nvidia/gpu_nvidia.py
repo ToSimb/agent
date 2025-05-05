@@ -1,7 +1,7 @@
 import subprocess
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_nvidia import logger_monitoring
 
 class GPUsMonitor(BaseObject):
     def __init__(self):
