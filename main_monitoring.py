@@ -1,6 +1,5 @@
 import sys
 import threading
-import json
 import time
 import signal
 import atexit
@@ -22,6 +21,7 @@ from monitoring.eth_port.eth_port import EthPortMonitor
 # from monitoring.freon_a.freon_a import FreonA
 # from monitoring.freon_b.freon_b import FreonB
 # from monitoring.switch.switch import Switch
+
 from storage.sqlite_commands_mon import (create_connection,
                                      insert_params)
 from storage.settings_handler import (get_file_mtime,
@@ -91,11 +91,11 @@ monitor_configs = [
         'monitor_class': EthPortMonitor,
         'settings_file': '_settings_file/proc/if.txt',
     },
-    #{
-    #    'name': 'f_a',
-    #    'monitor_class': FreonA,
-    #    'settings_file': '_settings_file/proc/f_a.txt',
-    #},
+    # {
+    #     'name': 'f_a',
+    #     'monitor_class': FreonA,
+    #     'settings_file': '_settings_file/proc/f_a.txt',
+    # },
     # {
     #     'name': 'f_b',
     #     'monitor_class': FreonB,

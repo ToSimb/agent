@@ -5,7 +5,7 @@ import subprocess
 import shutil
 import json
 from monitoring.base import BaseObject, SubObject
-from logger.logger_mon_dick import logger_monitoring
+from logger.logger_mon_disk import logger_monitoring
 
 
 class DisksMonitor(BaseObject):

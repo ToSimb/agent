@@ -3,7 +3,7 @@ import json
 import os
 from monitoring.base import BaseObject, SubObject
 
-from logger.logger_monitoring import logger_monitoring
+from logger.logger_mon_fb import logger_monitoring
 from config import (URL_FB, DEBUG_MODE)
 
 if DEBUG_MODE:
