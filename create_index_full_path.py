@@ -26,11 +26,11 @@ for item in agent_scheme.get('scheme').get('item_id_list'):
     elif 'gpu_' in item_full_path.split('/')[-1]:
         item_path[f"gpu:{numbers[-1]}"] = item_full_path
         # print(f"{item.get('full_path')} - gpu:{numbers[-1]}")
-    elif 'lvol_' in item_full_path.split('/')[-1] and 'f51' in item_full_path:
+    elif 'lvol_' in item_full_path.split('/')[-1] and ('nvidia' in item_full_path or 'gpu' in item_full_path):
         item_path["lvol:C:\\"] = item_full_path
     elif 'lvol_' in item_full_path.split('/')[-1]:
         item_path[f"lvol:{numbers[-1]}"] = item_full_path
-    elif 'disk_' in item_full_path.split('/')[-1] and 'f51' in item_full_path:
+    elif 'disk_' in item_full_path.split('/')[-1] and ('nvidia' in item_full_path or 'gpu' in item_full_path):
         item_path["disk:/dev/sda"] = item_full_path
         # print(f"{item.get('full_path')} - lvol:{numbers[-1]}")
     # if 'vus_fa_1' in item_full_path:
