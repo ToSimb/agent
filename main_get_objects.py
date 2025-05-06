@@ -7,9 +7,8 @@ from monitoring.system.system import SystemMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk import DisksMonitor
-from monitoring.disk_lite.disk_lite import DisksLiteMonitor
 # from monitoring.switch.switch import Switch
-from monitoring.freon_a.freon_a import FreonA
+# from monitoring.freon_a.freon_a import FreonA
 # from monitoring.freon_b.freon_b import FreonB
 
 
@@ -41,7 +40,11 @@ def monitor_start(monitor_class, tag, ip_addr = None):
     else:
         time_init = 0
         monitor_instance = monitor_class(ip_addr)
-    _, time_update = measure_execution_time(monitor_instance.update)
+    time_update = 0
+    try:
+        _, time_update = measure_execution_time(monitor_instance.update)
+    except Exception as e:
+        logger_monitoring.error(f"Нет обновления в {tag}: {e}")
     objects_descr, time_get_obj = measure_execution_time(monitor_instance.get_objects_description)
     data, time_data = measure_execution_time(monitor_instance.get_all)
 
@@ -73,14 +76,13 @@ def monitor_start(monitor_class, tag, ip_addr = None):
 def main():
     logger_monitoring.info("- - -" * 10)
     monitors = [
-        # (CPUsMonitor, 'cpu'),
-        # (GPUsMonitor, 'gpu'),
-        # (SystemMonitor, 'system'),
-        # (LvolsMonitor, 'lvol'),
+        (CPUsMonitor, 'cpu'),
+        (GPUsMonitor, 'gpu'),
+        (SystemMonitor, 'system'),
+        (LvolsMonitor, 'lvol'),
         (DisksMonitor, 'disk'),
-        # (DisksLiteMonitor, 'disk_lite'),
-        # (EthPortMonitor, 'if'),
-        (FreonA, 'f_a'),
+        (EthPortMonitor, 'if'),
+        # (FreonA, 'f_a'),
         # (FreonB, 'f_b'),
         # (Switch, 'switch_dlink_dgs_1210_28x_me_0', '10.70.0.250'), # Это из схемы
         #

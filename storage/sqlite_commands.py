@@ -4,7 +4,6 @@ import json
 from sqlite3 import Error
 
 from logger.logger_rest_client import logger_rest_client
-from logger.logger_monitoring import logger_monitoring
 
 db_file = "storage/my_database.db"
 
@@ -16,7 +15,7 @@ def create_connection():
     try:
         conn = sqlite3.connect(db_file)
     except Error as e:
-        print(f"Ошибка подключения: {e}")
+        logger_rest_client.error(f"Ошибка подключения: {e}")
     return conn
 
 def create_table():
@@ -60,19 +59,6 @@ def clear_table():
             return False
     else:
         logger_rest_client.error("Ошибка подключения к базе данных.")
-        return False
-
-def insert_params(conn, json_array):
-    try:
-        cursor = conn.cursor()
-        json_data = [(json.dumps(json_obj),) for json_obj in json_array]
-        cursor.executemany('INSERT INTO params (pf) VALUES (?)', json_data)
-        conn.commit()
-        cursor.close()
-        return True
-    except Exception as e:
-        conn.rollback()
-        logger_monitoring.error(f"Ошибка вставки данных: {e}")
         return False
 
 def select_params(conn, n):

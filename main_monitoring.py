@@ -1,6 +1,5 @@
 import sys
 import threading
-import json
 import time
 import signal
 import atexit
@@ -15,15 +14,15 @@ from monitoring.service import (create_index_for_any,
                                 crate_items_agent_reg_response)
 from monitoring.system.system import SystemMonitor
 from monitoring.cpu.cpu import CPUsMonitor
-# from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
+from monitoring.gpu_nvidia.gpu_nvidia import GPUsMonitor
 from monitoring.lvol.lvol import LvolsMonitor
 from monitoring.disk.disk import DisksMonitor
 from monitoring.eth_port.eth_port import EthPortMonitor
-from monitoring.freon_a.freon_a import FreonA
+# from monitoring.freon_a.freon_a import FreonA
 # from monitoring.freon_b.freon_b import FreonB
 # from monitoring.switch.switch import Switch
-from storage.sqlite_commands import (create_connection,
-                                     check_db,
+
+from storage.sqlite_commands_mon import (create_connection,
                                      insert_params)
 from storage.settings_handler import (get_file_mtime,
                                       get_settings)
@@ -72,11 +71,11 @@ monitor_configs = [
         'monitor_class': CPUsMonitor,
         'settings_file': '_settings_file/proc/cpu.txt',
     },
-    # {
-    #     'name': 'gpu',
-    #     'monitor_class': GPUsMonitor,
-    #     'settings_file': '_settings_file/proc/gpu.txt',
-    # },
+    {
+        'name': 'gpu',
+        'monitor_class': GPUsMonitor,
+        'settings_file': '_settings_file/proc/gpu.txt',
+    },
     {
         'name': 'lvol',
         'monitor_class': LvolsMonitor,
@@ -92,11 +91,11 @@ monitor_configs = [
         'monitor_class': EthPortMonitor,
         'settings_file': '_settings_file/proc/if.txt',
     },
-    {
-        'name': 'f_a',
-        'monitor_class': FreonA,
-        'settings_file': '_settings_file/proc/f_a.txt',
-    },
+    # {
+    #     'name': 'f_a',
+    #     'monitor_class': FreonA,
+    #     'settings_file': '_settings_file/proc/f_a.txt',
+    # },
     # {
     #     'name': 'f_b',
     #     'monitor_class': FreonB,
