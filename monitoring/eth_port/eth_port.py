@@ -103,7 +103,7 @@ class EthPort(SubObject):
     def __init__(self, eth_port_name: str, ):
         super().__init__()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = script_dir + "\\if_dict.txt"
+        file_name = os.path.join(script_dir, "if_dict.txt")
         file_max_bandwidth = self.__open_dict(file_name)
         self.name = eth_port_name
         if self.name in file_max_bandwidth.keys():
