@@ -121,7 +121,7 @@ class FreonA(BaseObject):
     @staticmethod
     def __send_req():
         try:
-            response = requests.get(URL_FA)
+            response = requests.get(URL_FA, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:

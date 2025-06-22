@@ -119,7 +119,7 @@ class FreonB(BaseObject):
     @staticmethod
     def __send_req():
         try:
-            response = requests.get(URL_FB)
+            response = requests.get(URL_FB, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -152,14 +152,18 @@ class FreonB(BaseObject):
                         logger_monitoring.error(f'Для индекса {index} нет значения')
 
     def update(self):
-        fb = self.__send_req()
-        if fb is not None:
-            self.conn = "OK"
-            for i in fb["rows"]:
-                if i["name"]:
-                    self.vus[i["name"]].update(i)
-        else:
+        try:
+            fb = self.__send_req()
+            if fb is not None:
+                self.conn = "OK"
+                for i in fb["rows"]:
+                    if i["name"]:
+                        self.vus[i["name"]].update(i)
+            else:
+                self.conn = "FATAL"
+        except Exception as e:
             self.conn = "FATAL"
+            logger_monitoring.error(f"Ошибка при update у FreonB - {e}")
 
     def get_all(self):
         """
@@ -198,13 +202,16 @@ class Vu_fb(SubObject):
         return self.boards
 
     def update(self, line):
-        self.params["asic.taskId"] = line["taskId"]
-        self.params["asic.state"] = line["state"]
-        state_disconnect = False
-        if self.params["asic.state"] == "disconnected":
-            state_disconnect = True
-        for board_index in range(COUNT_BOARDS):
-            self.boards[board_index].update(line["stat"]["units"][board_index], state_disconnect)
+        try:
+            self.params["asic.taskId"] = line["taskId"]
+            self.params["asic.state"] = line["state"]
+            state_disconnect = False
+            if self.params["asic.state"] == "disconnected":
+                state_disconnect = True
+            for board_index in range(COUNT_BOARDS):
+                self.boards[board_index].update(line["stat"]["units"][board_index], state_disconnect)
+        except Exception as e:
+            logger_monitoring.error(f"Ошибка при update у Vu_fb - {e}")
 
     def get_params_all(self):
         return self.params
@@ -212,17 +219,20 @@ class Vu_fb(SubObject):
     def get_metric(self, metric_id: str):
         try:
             if metric_id in self.params:
-                result = self.params[metric_id]
-                if result is not None:
+                result_params = self.params[metric_id]
+                result = None
+                if result_params is not None:
                     self.params[metric_id] = None
                     if metric_id in ["asic.name"]:
-                        result = self.validate_string(result)
+                        result = self.validate_string(result_params)
                     elif metric_id in ["asic.taskId"]:
-                        result = self.validate_integer(result)
+                        result = self.validate_integer(result_params)
                     elif metric_id in ["asic.P"]:
-                        result = self.validate_double(result)
+                        result = self.validate_double(result_params)
+                    elif metric_id in ["asic.state"]:
+                        result = self.validate_state(HASH_STATE.get(result_params, None))
                     else:
-                        result = self.validate_state(HASH_STATE.get(result, None))
+                        logger_monitoring.error(f"такого быть не должно, но что то тут не явно {metric_id}")
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
@@ -253,17 +263,21 @@ class Board_fb(SubObject):
         return self.units_T, self.units_U, self.units_I
 
     def update(self, line: dict, state_disconnect):
-        line_data, units_T_data, units_U_data, units_I_data = self.__parse_response_data_FB(line, state_disconnect)
-        self.params.update(line_data)
-        if units_T_data:
-            for index in range(COUNT_SENSOR_T):
-                self.units_T[index].update(units_T_data[index])
-        if units_U_data:
-            for index in range(COUNT_SENSOR_U):
-                self.units_U[index].update(units_U_data[index])
-        if units_I_data:
-            for index in range(COUNT_SENSOR_I):
-                self.units_I[index].update(units_I_data[index])
+        try:
+            line_data, units_T_data, units_U_data, units_I_data = self.__parse_response_data_FB(line, state_disconnect)
+            self.params.update(line_data)
+            if units_T_data:
+                for index in range(COUNT_SENSOR_T):
+                    self.units_T[index].update(units_T_data[index])
+            if units_U_data:
+                for index in range(COUNT_SENSOR_U):
+                    self.units_U[index].update(units_U_data[index])
+            if units_I_data:
+                for index in range(COUNT_SENSOR_I):
+                    self.units_I[index].update(units_I_data[index])
+        except Exception as e:
+            logger_monitoring.error(f"Ошибка при update у Board_fb - {e}")
+
 
     @staticmethod
     def __parse_response_data_FB(line: dict, state_disconnect):
@@ -283,13 +297,16 @@ class Board_fb(SubObject):
     def get_metric(self, metric_id: str):
         try:
             if metric_id in self.params:
-                result = self.params[metric_id]
-                if result is not None:
+                result_params = self.params[metric_id]
+                result = None
+                if result_params is not None:
                     self.params[metric_id] = None
                     if metric_id in ["asic.maxT", "asic.P"]:
-                        result = self.validate_double(result)
+                        result = self.validate_double(result_params)
+                    elif metric_id in ["asic.state"]:
+                        result = self.validate_state(HASH_STATE.get(result_params, None))
                     else:
-                        result = self.validate_state(HASH_STATE.get(result, None))
+                        logger_monitoring.error(f"такого быть не должно, но что то тут не явно {metric_id}")
                 return result
             else:
                 raise KeyError(f"Ключ не найден в словаре.")
